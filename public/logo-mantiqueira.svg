@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 160" role="img" aria-labelledby="title desc">
+  <title id="title">Mantiqueira Distribuidora</title>
+  <desc id="desc">Logo Mantiqueira Distribuidora com o slogan Sua referência em distribuição</desc>
+  <defs>
+    <clipPath id="circleClip"><circle cx="80" cy="80" r="76"/></clipPath>
+  </defs>
+  <circle cx="80" cy="80" r="76" fill="#403d96"/>
+  <g clip-path="url(#circleClip)">
+    <path fill="#fff" d="M8 4h78L47 39 24 68 3 82V4z"/>
+    <path fill="#fff" d="M103 39l67-43v168l-68-43 35-39-42-39z"/>
+    <path fill="#ed334d" d="M24 70L155-14v27L34 91z"/>
+    <path fill="#2d65b3" d="M35 95L160 15v27L47 112z"/>
+  </g>
+  <text x="174" y="67" fill="#403d96" font-family="Manrope, Arial, sans-serif" font-size="48" font-weight="800" letter-spacing="-2">MANTIQUEIRA</text>
+  <text x="176" y="101" fill="#ed334d" font-family="Manrope, Arial, sans-serif" font-size="27" font-weight="800">DISTRIBUIDORA</text>
+  <text x="176" y="128" fill="#3f414b" font-family="Arial, sans-serif" font-size="19">Sua referência em distribuição!</text>
+</svg>
