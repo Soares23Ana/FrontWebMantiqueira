@@ -1,0 +1,148 @@
+# ==============================================================================
+# DEPENDÊNCIAS & GERENCIADORES DE PACOTES
+# ==============================================================================
+node_modules/
+.pnpm-store/
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Logs de depuração
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==============================================================================
+# BUILD, DISTRIBUIÇÃO & CACHE (React, Vite, Next.js, Gatsby, etc.)
+# ==============================================================================
+/build
+/dist
+/out
+/.next/
+/.nuxt/
+/.gatsby/
+.storybook-out/
+.serverless/
+
+# Caches de ferramentas e linters
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+.stylelintcache
+.tsbuildinfo
+
+# ==============================================================================
+# VARIÁVEIS DE AMBIENTE E SEGURANÇA
+# ==============================================================================
+# Bloqueia todos os arquivos .env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.test
+.env.production
+*.env.override
+
+# Permite versionar apenas arquivos de exemplo/template
+!.env.example
+!.env.template
+
+# Chaves de segurança e certificados
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
+# ==============================================================================
+# TESTES E COBERTURA DE CÓDIGO
+# ==============================================================================
+/coverage
+/.nyc_output
+*.lcov
+.clover
+junit.xml
+
+# Relatórios de Testes E2E (Cypress / Playwright)
+/cypress/screenshots
+/cypress/videos
+/cypress/downloads
+/playwright-report
+/test-results
+
+# ==============================================================================
+# IDEs E EDITORES DE CÓDIGO
+# ==============================================================================
+# Visual Studio Code (Ignora configurações pessoais, mantendo apenas recomendados)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/code-snippets
+*.code-workspace
+
+# JetBrains (WebStorm, IntelliJ, etc.)
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Vim, Emacs e Sublime Text
+*~
+*.swp
+*.swo
+*.swn
+\#*\#
+.#*
+*.sublime-project
+*.sublime-workspace
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+
+# ==============================================================================
+# SISTEMAS OPERACIONAIS
+# ==============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.trash
+.fuse_hidden*
+
+# ==============================================================================
+# ARQUIVOS TEMPORÁRIOS E BANCOS DE DADOS LOCAIS
+# ==============================================================================
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+*.tmp
+*.temp
+/tmp
