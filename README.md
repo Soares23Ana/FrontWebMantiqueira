@@ -1,91 +1,58 @@
-# 📦 Mantiqueira Distribuidora - Frontend
+# Mantiqueira Distribuidora — front-end (React + Vite + TypeScript + Tailwind CSS)
 
-Interface web moderna desenvolvida para a **Mantiqueira Distribuidora** no âmbito do Projeto Integrador. Esta aplicação oferece um painel administrativo completo e intuitivo para a gestão de catálogo de produtos, pedidos, clientes e operações de distribuição.
+Conectado à API `BackMantiqueiraWeb` (`/api/v1`). Nenhum dado é fixo no front: produtos, pedidos,
+clientes, banners, campanhas e configurações vêm da API.
 
----
+## Como rodar
 
-## 🏢 História da Empresa
+1. Suba a API (pasta `BackMantiqueiraWeb`):
 
-Fundada em fevereiro de 2005 em São João da Boa Vista (SP) por dois irmãos — filhos de vendedor —, a **Mantiqueira Distribuidora** iniciou suas operações em uma garagem residencial de 50 m². Com atuação focada no trabalho, dedicação e parceria com grandes fornecedores, a empresa expandiu sua presença do interior para todo o estado de São Paulo.
+       npm install
+       npm run migrar         # cria o banco e aplica as migrations
+       npm run seed:catalogo  # 38 produtos
+       npm run seed:dev       # usuários de teste (senha Mantiqueira@2026)
+       npm run seed:demo      # banners, campanha, contatos e 5 pedidos (um por status)
+       npm run dev            # http://localhost:3000
 
-Ao longo de mais de duas décadas de mercado, a empresa construiu uma equipe comercial altamente capacitada e consolidou um portfólio de distribuição que atende os canais farma e alimentar, trabalhando com marcas líderes nacionais e globais, como *Kimberly-Clark, Coty, Baruel, Philips Avent, Panasonic e Colgate*.
+2. Suba o front (esta pasta):
 
----
+       npm install
+       npm run dev            # http://localhost:5173
 
-## 🛠️ Tecnologias Utilizadas
+   Em desenvolvimento o Vite encaminha `/api`, `/arquivos` e `/saude` para `http://localhost:3000`.
+   Se a API estiver em outra porta, rode com `VITE_API_PROXY` (ex.: `VITE_API_PROXY=http://localhost:3001 npm run dev`).
+   Em produção defina `VITE_API_URL` (veja `.env.example`) e rode `npm run build`.
 
-Este projeto foi construído utilizando as ferramentas mais modernas do ecossistema front-end:
+## Acessos de teste (seed:dev)
+- Cliente: CNPJ `11.222.333/0001-81`
+- Equipe (gerencia a equipe): `admin@mantiqueira.com`
+- Senha de todos: `Mantiqueira@2026`
 
-* **[React](https://reactjs.org/) + [Vite](https://vitejs.dev/):** Biblioteca de interface do usuário com bundler de alta performance.
-* **[TypeScript](https://www.typescriptlang.org/):** Superconjunto de JavaScript que adiciona tipagem estática, garantindo maior segurança e previsibilidade no código.
-* **[Tailwind CSS](https://tailwindcss.com/) & [PostCSS](https://postcss.org/):** Framework de utilitários para estilização ágil, moderna e totalmente responsiva.
-* **Integração HTTP:** Axios / Fetch API para consumo de dados da API RESTful (Backend).
-* **Gerenciador de Pacotes:** NPM (Node Package Manager).
+A tela de login é única: com CNPJ entra o cliente (vai para "Minha conta"); com e-mail entra a equipe (vai para `/gestor`).
 
----
+## Rotas
+| Rota | Tela |
+|---|---|
+| `/` | Home dirigida pelo CMS (banners, campanhas ativas, destaques) |
+| `/produtos?busca=&marca=&disponibilidade=&ordenar=&pagina=` | Vitrine com busca, filtros e paginação |
+| `/categoria/:slug`, `/marca/:slug`, `/produto/:id` | Categoria, marca e produto |
+| `/carrinho`, `/checkout`, `/favoritos` | Carrinho (salvo no navegador), checkout e favoritos |
+| `/entrar`, `/cadastro` | Login (CNPJ ou e-mail) e cadastro de cliente |
+| `/minha-conta/pedidos`, `/perfil`, `/enderecos`, `/senha` | Área do cliente, com "Repetir pedido" |
+| `/gestor/...` | Área da equipe: painel, pedidos, produtos, importação, clientes, CMS, campanhas, métricas, equipe e saúde |
 
-## 🔑 Funcionalidades Principais
+## Estrutura
+- `src/api/client.ts` – chamadas à API, token, erros no formato da API e URLs de imagem
+- `src/context` – sessão (Auth), carrinho/favoritos (Cart), dados públicos da loja (Store) e avisos (Toast)
+- `src/hooks/useApi.ts` – carregamento/erro/recarregar de cada chamada
+- `src/pages` – telas da loja; `src/pages/account` – Minha conta; `src/pages/manager` – gestor
+- `src/data/brands.ts` – texto editorial das páginas de marca (o id é o slug da marca na API)
 
-* 📋 **Gestão de Catálogo de Produtos:** Exibição, busca avançada e filtragem do catálogo oficial da Mantiqueira.
-* 🛒 **Gestão de Pedidos e Vendas:** Interface dedicada para criação, acompanhamento de status e histórico de pedidos.
-* 📊 **Dashboard Administrativo:** Visualização de métricas de vendas e controle de distribuição em tempo real.
-* 🔒 **Autenticação e Controle de Acesso:** Sistema de Login seguro com persistência de token JWT e proteção de rotas privadas.
-* 📱 **Design Responsivo:** Experiência de uso fluida em dispositivos móveis, tablets e desktops.
-
----
-
-## 📁 Estrutura do Projeto
-
-A organização de diretórios do projeto segue as melhores práticas para escalabilidade:
-
-```text
-FrontWebMantiqueira/
-├── backend/                 # Diretório contendo a API do projeto
-├── dist/                    # Arquivos compilados para produção (gerados no build)
-├── public/                  # Arquivos estáticos globais (favicon, etc.)
-├── src/                     # Código-fonte principal da aplicação React
-├── package.json             # Dependências e scripts de automação
-├── tsconfig.json            # Configurações do compilador TypeScript
-├── vite.config.ts           # Configuração de build e plugins do Vite
-├── tailwind.config.js       # Configuração de temas e utilitários do Tailwind CSS
-├── postcss.config.js        # Configuração de processamento de CSS
-├── index.html               # Ponto de entrada da aplicação web
-└── README.md                # Documentação técnica do projeto
-```
-
-
----
-
-## 🚀 Como Executar o Projeto Localmente
-
-Siga as instruções abaixo para rodar a aplicação em seu ambiente de desenvolvimento:
-
-### 1. Pré-requisitos
-Certifique-se de ter o [Node.js](https://nodejs.org/) instalado em sua máquina.
-
-### 2. Clonar o Repositório
-```bash
-git clone https://github.com/Soares23Ana/FrontWebMantiqueira.git
-cd FrontWebMantiqueira
-```
-
-### 3. Instalar as Dependências
-```bash
-npm install
-```
-
-### 4. Configurar Variáveis de Ambiente
-Crie um arquivo `.env` na raiz do projeto contendo a URL de comunicação com o servidor backend:
-```env
-VITE_API_URL=http://localhost:3000
-```
-*(Nota: Projetos em Vite utilizam o prefixo `VITE_` em vez de `REACT_APP_` para expor variáveis de ambiente no frontend).*
-
-### 5. Iniciar o Servidor de Desenvolvimento
-```bash
-npm run dev
-```
-
-### 6. Acessar a Aplicação
-Abra o navegador e acesse a URL indicada no terminal (por padrão, o Vite roda na porta 5173):
-👉 **http://localhost:5173**
+## Decisões
+- Nada financeiro no front: sem preço, total, faturamento ou grupos de tabela de preço (a API também não envia).
+- Visitante vê só a disponibilidade; cliente logado vê o estoque exato.
+- Status de pedido iguais aos do back: Aguardando Separação → Em Separação → Saiu para Entrega → Entregue (ou Cancelado, com motivo obrigatório).
+- Clientes e pedidos exibem `nome_exibicao` (razão social, ou o nome do responsável).
+- O checkout envia `Idempotency-Key` (uma por abertura da tela): reenviar não duplica o pedido.
+- Trocar a senha encerra a sessão (a API invalida os tokens anteriores); o front leva de volta ao login.
+- Sessão de 8 horas; qualquer `401` leva ao login com o aviso de sessão expirada.
