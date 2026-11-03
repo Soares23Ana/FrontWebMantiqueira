@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api, ApiError, errorMessage, fetchAllPages } from '../../api/client';
 import Button from '../../components/Button';
 import Field from '../../components/Field';
@@ -30,16 +30,25 @@ interface Detalhes {
 export default function Customers() {
   const toast = useToast();
   const [search, setSearch] = useState('');
+  const [params] = useSearchParams();
   const [semCnpj, setSemCnpj] = useState(false);
+  // "Novos (7 dias)": vem do card do painel (?novos=7) ou do botão aqui. Do mais recente para o mais antigo.
+  const [novos, setNovos] = useState(params.get('novos') === '7');
   const [ordem, setOrdem] = useState<'Mais pedidos' | 'Nome (A–Z)'>('Mais pedidos');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [openId, setOpenId] = useState<number | null>(null);
   const busca = useDebounced(search.trim());
-  const filtros = { busca, sem_cnpj: semCnpj || undefined, ordenar: ordem === 'Mais pedidos' ? 'mais_pedidos' : 'nome' };
+  const filtros = {
+    busca,
+    sem_cnpj: semCnpj || undefined,
+    novos_dias: novos ? 7 : undefined,
+    // Com "novos", a API já ordena pelo cadastro mais recente (só se "ordenar" não for enviado).
+    ordenar: novos ? undefined : ordem === 'Mais pedidos' ? 'mais_pedidos' : 'nome',
+  };
   const lista = useApi(
     () => api.get<{ clientes: Cliente[]; paginacao: Paginacao }>('/clientes', { ...filtros, pagina: page, limite: pageSize }),
-    [busca, semCnpj, ordem, page, pageSize],
+    [busca, semCnpj, novos, ordem, page, pageSize],
   );
 
   const toggleActive = async (c: Cliente, ativo: boolean) => {
@@ -69,12 +78,17 @@ export default function Customers() {
       </SectionHeader>
       <div className="mb-4 flex flex-wrap items-center gap-4">
         <SearchBox value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Buscar por nome, razão social, e-mail, CNPJ ou cidade" />
-        <ChipFilter label="Ordenar" options={['Mais pedidos', 'Nome (A–Z)'] as const} value={ordem} onChange={(v) => { setOrdem(v); setPage(1); }} />
+        <button onClick={() => { setNovos((v) => !v); setPage(1); }} aria-pressed={novos}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${novos ? 'bg-brand text-white' : 'bg-white text-ink ring-1 ring-black/10 hover:bg-black/5'}`}>
+          Novos (7 dias)
+        </button>
+        {!novos && <ChipFilter label="Ordenar" options={['Mais pedidos', 'Nome (A–Z)'] as const} value={ordem} onChange={(v) => { setOrdem(v); setPage(1); }} />}
         <label className="flex items-center gap-2 text-sm">
           <Toggle checked={semCnpj} label="Só CNPJ pendente" onChange={(v) => { setSemCnpj(v); setPage(1); }} />
           Só com CNPJ pendente
         </label>
       </div>
+      {novos && <p className="mb-4 rounded-xl bg-brand/5 p-3 text-sm text-brand">Clientes cadastrados nos últimos 7 dias, do mais recente para o mais antigo. É só para consulta: não há aprovação de cadastro, e você pode bloquear qualquer conta pelo botão de acesso.</p>}
       {semCnpj && <p className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Estes clientes não conseguem entrar porque o CNPJ está ausente ou inválido. Corrija o CNPJ no detalhe do cliente.</p>}
 
       {lista.error ? <ErrorState error={lista.error} onRetry={lista.reload} /> : (

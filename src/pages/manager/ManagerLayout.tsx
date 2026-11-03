@@ -9,6 +9,8 @@ import { useAuth } from '../../context/AuthContext';
 interface Contadores {
   pedidos_pendentes: number;
   estoque_baixo: number;
+  /** Clientes cadastrados nos últimos 7 dias (só informativo: não há aprovação de cadastro). */
+  clientes_novos_7_dias: number;
 }
 
 interface ManagerContext {
@@ -38,7 +40,7 @@ export default function ManagerLayout() {
         { to: '/gestor/pedidos', label: 'Pedidos', icon: 'orders', badge: contadores?.pedidos_pendentes },
         { to: '/gestor/produtos', label: 'Produtos', icon: 'box', badge: contadores?.estoque_baixo },
         { to: '/gestor/importacao', label: 'Importação', icon: 'upload' },
-        { to: '/gestor/clientes', label: 'Clientes', icon: 'users' },
+        { to: '/gestor/clientes', label: 'Clientes', icon: 'users', badge: contadores?.clientes_novos_7_dias },
       ],
     },
     {

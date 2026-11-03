@@ -7,16 +7,18 @@ import Field from '../components/Field';
 import { FormError } from '../components/State';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
-import { formatCnpj, isValidCnpj } from '../utils/cnpj';
+import { formatCnpj, isValidCnpj, normalizarCnpj } from '../utils/cnpj';
 
-// Tela única de login: cliente entra com CNPJ, equipe com e-mail. O mesmo endpoint decide pelo "@".
+// Tela única de login, neutra: não diz que existe uma área da equipe. O mesmo campo aceita CNPJ (numérico ou
+// com letras) ou e-mail; a regra da API é só o "@": com "@" é e-mail, sem "@" é CNPJ.
 export default function Login() {
   const { user, login, expiredMessage } = useAuth();
   const { config } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string; cadastro?: string } | null)?.from;
-  const cadastroMsg = (location.state as { cadastro?: string } | null)?.cadastro;
+  const state = location.state as { from?: string; cadastro?: string } | null;
+  const from = state?.from;
+  const cadastroMsg = state?.cadastro;
   const [identificador, setIdentificador] = useState('');
   const [senha, setSenha] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,19 +28,21 @@ export default function Login() {
 
   if (user && !sending) return <Navigate to={user.tipo === 'equipe' ? '/gestor' : from ?? '/minha-conta'} replace />;
 
-  const isEmail = /[@a-z]/i.test(identificador);
-
+  // A máscara de CNPJ só entra quando dá para ter certeza de que é um CNPJ: só números, ou os 14 caracteres completos.
+  // Antes disso o texto fica como foi digitado, porque um e-mail também começa com letras.
   const onChange = (value: string) => {
-    // Se só tem números (e pontuação), aplica a máscara de CNPJ.
-    setIdentificador(/[@a-z]/i.test(value) ? value.trim() : formatCnpj(value));
+    if (value.includes('@')) return setIdentificador(value.trim());
+    const n = normalizarCnpj(value);
+    setIdentificador(/^\d*$/.test(n) || n.length >= 14 ? formatCnpj(value) : value);
   };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    const isEmail = identificador.includes('@');
     const next = {
-      identificador: !identificador
+      identificador: !identificador.trim()
         ? 'Informe seu CNPJ ou e-mail.'
-        : !isEmail && !isValidCnpj(identificador) ? 'Informe um CNPJ válido, com 14 dígitos.' : '',
+        : !isEmail && !isValidCnpj(identificador) ? 'Informe um CNPJ válido ou um e-mail.' : '',
       senha: senha ? '' : 'Informe sua senha.',
     };
     setErrors(next);
@@ -46,7 +50,7 @@ export default function Login() {
     if (next.identificador || next.senha) return;
     setSending(true);
     try {
-      const u = await login(identificador, senha);
+      const u = await login(isEmail ? identificador.trim() : normalizarCnpj(identificador), senha);
       if (u.tipo === 'equipe') navigate(from?.startsWith('/gestor') ? from : '/gestor', { replace: true });
       else navigate(from && !from.startsWith('/gestor') ? from : '/minha-conta', { replace: true });
     } catch (err) {
@@ -66,10 +70,10 @@ export default function Login() {
       )}
       <div className="grid gap-14 md:grid-cols-2">
         <form onSubmit={submit} noValidate>
-          <h3 className="mb-4 text-xl font-extrabold">Já tem conta? Entre com seu CNPJ.</h3>
+          <h3 className="mb-4 text-xl font-extrabold">Já tem conta? Entre.</h3>
           <FormError message={formError} />
-          <Field label="CNPJ (ou e-mail, para a equipe)" value={identificador} placeholder="00.000.000/0000-00"
-            autoComplete="username" onChange={(e) => onChange(e.target.value)} error={errors.identificador} />
+          <Field label="CNPJ ou e-mail" value={identificador} placeholder="00.000.000/0000-00" autoComplete="username"
+            autoCapitalize="none" spellCheck={false} onChange={(e) => onChange(e.target.value)} error={errors.identificador} />
           <Field label="Senha" type={showPassword ? 'text' : 'password'} value={senha} placeholder="Senha" autoComplete="current-password"
             onChange={(e) => setSenha(e.target.value)} error={errors.senha}
             adornment={<button type="button" onClick={() => setShowPassword(!showPassword)} className="text-sm font-extrabold text-brand">{showPassword ? 'Ocultar' : 'Mostrar'}</button>} />

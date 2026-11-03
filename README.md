@@ -28,7 +28,7 @@ clientes, banners, campanhas e configurações vêm da API.
 - Equipe (gerencia a equipe): `admin@mantiqueira.com`
 - Senha de todos: `Mantiqueira@2026`
 
-A tela de login é única: com CNPJ entra o cliente (vai para "Minha conta"); com e-mail entra a equipe (vai para `/gestor`).
+A tela de login é única e neutra (não menciona a equipe): o mesmo campo aceita CNPJ (numérico ou com letras) ou e-mail. A regra é só o `@`: com `@` é e-mail e entra a equipe (vai para `/gestor`); sem `@` é CNPJ e entra o cliente (vai para "Minha conta").
 
 ## Rotas
 | Rota | Tela |
@@ -53,6 +53,9 @@ A tela de login é única: com CNPJ entra o cliente (vai para "Minha conta"); co
 - Visitante vê só a disponibilidade; cliente logado vê o estoque exato.
 - Status de pedido iguais aos do back: Aguardando Separação → Em Separação → Saiu para Entrega → Entregue (ou Cancelado, com motivo obrigatório).
 - Clientes e pedidos exibem `nome_exibicao` (razão social, ou o nome do responsável).
+- **CNPJ alfanumérico** (Receita Federal, desde julho de 2026): máscara, validação (módulo 11, caractere = ASCII − 48) e login aceitam letras nas 12 primeiras posições (`src/utils/cnpj.ts`).
+- **Cadastro:** ao completar o CNPJ, mostra o nome da empresa na Receita (`GET /cnpj/:cnpj`) antes de enviar; ao completar o CEP, preenche o endereço (`GET /cep/:cep`). As duas consultas são só de apoio: se falharem, a pessoa digita à mão.
+- **Novos cadastros no gestor:** selo no menu, card no painel e filtro "Novos (7 dias)" em Clientes (`GET /clientes?novos_dias=7`). É só consulta: não há aprovação de cadastro.
 - O checkout envia `Idempotency-Key` (uma por abertura da tela): reenviar não duplica o pedido.
 - Trocar a senha encerra a sessão (a API invalida os tokens anteriores); o front leva de volta ao login.
 - Sessão de 8 horas; qualquer `401` leva ao login com o aviso de sessão expirada.
