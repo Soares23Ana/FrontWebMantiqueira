@@ -196,4 +196,9 @@ public/img/                fotos dos produtos de exemplo e logotipo
 
 ## Equipe
 
-Amanda, Ana Júlia e equipe 5, Unifeob. Projeto Integrador, 2026.
+- Alice dos Santos Maganhoto 25000188
+- Amanda Rodrigues Pristupa Martins 25000009
+- Ana Julia Gouveia Mazzi 25000108
+- Ana Luiza Soares 25000967
+- Hanry de Sousa 24001865
+- Mirian Suelen Passos 25000699
