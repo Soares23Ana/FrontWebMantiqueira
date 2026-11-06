@@ -10,6 +10,7 @@ import { useToast } from '../context/ToastContext';
 import { useApi } from '../hooks/useApi';
 import { track } from '../utils/events';
 import { dateFromToday } from '../utils/format';
+import { novoUuid } from '../utils/uuid';
 import type { Endereco, ItemIndisponivel, Pedido } from '../types';
 
 const MOTIVOS: Record<ItemIndisponivel['motivo'], string> = {
@@ -34,7 +35,7 @@ export default function Checkout() {
   const [formError, setFormError] = useState('');
   const [sending, setSending] = useState(false);
   // Uma chave por checkout: se o envio for repetido (duplo clique, queda de rede), a API devolve o mesmo pedido.
-  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey] = useState(() => novoUuid());
 
   useEffect(() => track({ tipo: 'checkout_iniciado' }), []);
   useEffect(() => {
