@@ -13,6 +13,7 @@ function sessao(): string {
 }
 
 type Evento =
+  | { tipo: 'visita' }
   | { tipo: 'produto_visto'; id_produto: number }
   | { tipo: 'carrinho_adicionar'; id_produto: number; quantidade?: number }
   | { tipo: 'checkout_iniciado' }

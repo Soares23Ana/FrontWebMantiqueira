@@ -33,7 +33,7 @@ export default function Catalog() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { categorias } = useStore();
+  const { categorias, campanhas } = useStore();
   const [params, setParams] = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -41,16 +41,24 @@ export default function Catalog() {
   const marca = params.get('marca') ?? '';
   const disponibilidade = params.get('disponibilidade') ?? '';
   const ordenar = params.get('ordenar') ?? '';
+  const campanha = params.get('campanha') ?? '';
   const pagina = Math.max(1, Number(params.get('pagina')) || 1);
-  const categoria = slug ?? params.get('categoria') ?? '';
+  const slugCategoria = slug ?? params.get('categoria') ?? '';
+  // Categorias têm 2 níveis. Um endereço /categoria/<subcategoria> (vindo da busca, por exemplo) vira
+  // categoria principal + subcategoria, que é o que a API espera nos filtros.
+  const principalDaSub = categorias.find((c) => c.subcategorias?.some((s) => s.slug === slugCategoria));
+  const categoria = principalDaSub?.slug ?? slugCategoria;
+  const subcategoria = principalDaSub ? slugCategoria : params.get('subcategoria') ?? '';
   const categoriaAtual = categorias.find((c) => c.slug === categoria);
+  const subcategoriaAtual = categoriaAtual?.subcategorias?.find((s) => s.slug === subcategoria);
+  const campanhaAtual = campanhas.find((c) => c.slug === campanha);
 
-  const query = { busca, categoria, marca, disponibilidade, ordenar };
+  const query = { busca, categoria, subcategoria, marca, disponibilidade, campanha, ordenar };
   const lista = useApi(
     () => api.get<{ produtos: Produto[]; paginacao: Paginacao }>('/produtos', { ...query, pagina, limite: LIMITE }),
-    [busca, categoria, marca, disponibilidade, ordenar, pagina, user?.id],
+    [busca, categoria, subcategoria, marca, disponibilidade, campanha, ordenar, pagina, user?.id],
   );
-  const filtros = useApi(() => api.get<Filtros>('/produtos/filtros', query), [busca, categoria, marca, disponibilidade]);
+  const filtros = useApi(() => api.get<Filtros>('/produtos/filtros', query), [busca, categoria, subcategoria, marca, disponibilidade, campanha]);
 
   const update = (changes: Record<string, string>) => {
     const next = new URLSearchParams(params);
@@ -67,6 +75,7 @@ export default function Catalog() {
     const next = new URLSearchParams(params);
     next.delete('pagina');
     next.delete('categoria');
+    next.delete('subcategoria');
     const qs = next.toString();
     navigate(`${s ? `/categoria/${s}` : '/produtos'}${qs ? `?${qs}` : ''}`);
   };
@@ -83,9 +92,16 @@ export default function Catalog() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const title = busca ? `Resultados para “${busca}”` : categoriaAtual?.nome ?? (categoria ? 'Categoria' : 'Todos os produtos');
+  const title = busca ? `Resultados para “${busca}”`
+    : campanhaAtual ? campanhaAtual.titulo
+    : subcategoriaAtual?.nome ?? categoriaAtual?.nome ?? (categoria ? 'Categoria' : 'Todos os produtos');
   const total = lista.data?.paginacao.total;
-  const hasFilters = !!(marca || disponibilidade || busca);
+  const hasFilters = !!(marca || disponibilidade || busca || subcategoria || campanha);
+  // Categorias vêm em árvore; a contagem dos filtros considera os outros filtros ativos.
+  const arvore = filtros.data?.categorias ?? categorias.map((c) => ({
+    ...c, total: c.total_produtos ?? 0,
+    subcategorias: c.subcategorias?.map((s) => ({ ...s, total: s.total_produtos ?? 0 })),
+  }));
 
   const sidebar = (
     <div className="grid gap-6">
@@ -97,12 +113,24 @@ export default function Catalog() {
               Todas
             </button>
           </li>
-          {(filtros.data?.categorias ?? categorias.map((c) => ({ ...c, total: c.total_produtos ?? 0 }))).map((c) => (
+          {arvore.map((c) => (
             <li key={c.id_categoria}>
               <button onClick={() => setCategoria(c.slug)}
-                className={`flex w-full justify-between rounded-lg px-3 py-1.5 text-left text-sm ${categoria === c.slug ? 'bg-brand text-white' : 'hover:bg-white'}`}>
+                className={`flex w-full justify-between rounded-lg px-3 py-1.5 text-left text-sm ${categoria === c.slug && !subcategoria ? 'bg-brand text-white' : 'hover:bg-white'}`}>
                 <span>{c.nome}</span><span className="opacity-70">{c.total}</span>
               </button>
+              {categoria === c.slug && c.subcategorias && c.subcategorias.length > 0 && (
+                <ul className="ml-3 mt-1 grid gap-1 border-l border-black/10 pl-2">
+                  {c.subcategorias.map((s) => (
+                    <li key={s.id_categoria}>
+                      <button onClick={() => update({ subcategoria: subcategoria === s.slug ? '' : s.slug })}
+                        className={`flex w-full justify-between rounded-lg px-3 py-1 text-left text-sm ${subcategoria === s.slug ? 'bg-brand text-white' : 'hover:bg-white'}`}>
+                        <span>{s.nome}</span><span className="opacity-70">{s.total}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>
@@ -145,6 +173,7 @@ export default function Catalog() {
       <nav aria-label="Você está em" className="mb-3 text-sm text-muted">
         <Link to="/" className="hover:text-brand">Início</Link> / <Link to="/produtos" className="hover:text-brand">Produtos</Link>
         {categoriaAtual && <> / <span className="text-ink">{categoriaAtual.nome}</span></>}
+        {subcategoriaAtual && <> / <span className="text-ink">{subcategoriaAtual.nome}</span></>}
       </nav>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -169,6 +198,8 @@ export default function Catalog() {
       {hasFilters && (
         <div className="mb-6 flex flex-wrap items-center gap-2 text-sm">
           {busca && <Chip label={`Busca: ${busca}`} onRemove={() => update({ busca: '' })} />}
+          {campanha && <Chip label={`Campanha: ${campanhaAtual?.titulo ?? campanha}`} onRemove={() => update({ campanha: '' })} />}
+          {subcategoria && <Chip label={subcategoriaAtual?.nome ?? subcategoria} onRemove={() => update({ subcategoria: '' })} />}
           {marca.split(',').filter(Boolean).map((m) => (
             <Chip key={m} label={filtros.data?.marcas.find((x) => x.slug === m)?.nome ?? m} onRemove={() => toggleMarca(m)} />
           ))}

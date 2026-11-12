@@ -85,7 +85,7 @@ function ProductList() {
     try {
       const todos = await fetchAllPages<Produto>('/produtos', 'produtos', filtros);
       downloadCsv('produtos.csv', ['SKU', 'Produto', 'Categoria', 'Marca', 'Estoque', 'Estoque mínimo', 'Múltiplo de venda', 'Ativo'],
-        todos.map((p) => [p.sku, p.nome, p.categoria?.nome ?? '', p.marca?.nome ?? '', p.estoque ?? '', p.estoque_minimo ?? '', p.multiplo_venda, p.ativo ? 'Sim' : 'Não']));
+        todos.map((p) => [p.sku, p.nome, [p.categoria?.nome, p.subcategoria?.nome].filter(Boolean).join(' / '), p.marca?.nome ?? '', p.estoque ?? '', p.estoque_minimo ?? '', p.multiplo_venda, p.ativo ? 'Sim' : 'Não']));
     } catch (e) {
       toast(errorMessage(e), 'error');
     }
@@ -135,7 +135,7 @@ function ProductList() {
                 </div>
               </td>
               <td className="px-4 text-sm text-muted">{p.sku}</td>
-              <td className="px-4 text-sm">{p.categoria?.nome ?? '—'}<span className="block text-muted">{p.marca?.nome ?? '—'}</span></td>
+              <td className="px-4 text-sm">{p.categoria?.nome ?? '—'}{p.subcategoria ? ` / ${p.subcategoria.nome}` : ''}<span className="block text-muted">{p.marca?.nome ?? '—'}</span></td>
               <td className="px-4 text-sm">
                 <p className="font-extrabold">{p.estoque} <span className="font-normal text-muted">/ mín. {p.estoque_minimo}</span></p>
                 <Availability value={p.disponibilidade} />
@@ -171,7 +171,8 @@ function ProductFormModal({ product, categorias, marcas, onClose, onSaved }: {
     nome: product?.nome ?? '',
     descricao: product?.descricao ?? '',
     destaques: (product?.destaques ?? []).join('\n'),
-    id_categoria: product?.categoria?.id_categoria ? String(product.categoria.id_categoria) : '',
+    // O produto aponta para a subcategoria quando houver, senão para a categoria principal.
+    id_categoria: String(product?.subcategoria?.id_categoria ?? product?.categoria?.id_categoria ?? ''),
     id_marca: product?.marca?.id_marca ? String(product.marca.id_marca) : '',
     estoque_minimo: String(product?.estoque_minimo ?? 10),
     multiplo_venda: String(product?.multiplo_venda ?? 1),
@@ -255,7 +256,14 @@ function ProductFormModal({ product, categorias, marcas, onClose, onSaved }: {
             <div className="grid gap-x-4 sm:grid-cols-2">
               <SelectField label="Categoria" mandatory={false} value={form.id_categoria} onChange={set('id_categoria')} error={errors.id_categoria}>
                 <option value="">Sem categoria</option>
-                {categorias.map((c) => <option key={c.id_categoria} value={c.id_categoria}>{c.nome}{c.ativo === false ? ' (inativa)' : ''}</option>)}
+                {categorias.map((c) => c.subcategorias && c.subcategorias.length > 0 ? (
+                  <optgroup key={c.id_categoria} label={`${c.nome}${c.ativo === false ? ' (inativa)' : ''}`}>
+                    <option value={c.id_categoria}>{c.nome} (sem subcategoria)</option>
+                    {c.subcategorias.map((s) => <option key={s.id_categoria} value={s.id_categoria}>{s.nome}{s.ativo === false ? ' (inativa)' : ''}</option>)}
+                  </optgroup>
+                ) : (
+                  <option key={c.id_categoria} value={c.id_categoria}>{c.nome}{c.ativo === false ? ' (inativa)' : ''}</option>
+                ))}
               </SelectField>
               <SelectField label="Marca" mandatory={false} value={form.id_marca} onChange={set('id_marca')} error={errors.id_marca}>
                 <option value="">Sem marca</option>

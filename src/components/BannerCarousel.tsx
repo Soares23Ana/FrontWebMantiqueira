@@ -24,15 +24,17 @@ export default function BannerCarousel({ banners }: { banners: BannerPublico[] }
       <div className="relative aspect-[1920/700] overflow-hidden rounded-3xl bg-gradient-to-r from-brand-dark to-brand">
         {banners.map((b, i) => {
           const img = <img src={imageUrl(b.imagem_url)} alt={b.titulo} className="h-full w-full object-cover" />;
-          const external = b.link && /^https?:\/\//.test(b.link);
+          // O destino (produto, categoria, marca, campanha ou link) já vem resolvido pela API.
+          const link = b.destino?.link ?? b.link;
+          const external = link && /^https?:\/\//.test(link);
           const onClick = () => track({ tipo: 'banner_clique', id_banner: b.id_banner });
           return (
             <div key={b.id_banner} aria-hidden={i !== index}
               className={`absolute inset-0 transition-opacity duration-700 ${i === index ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
-              {!b.link ? img : external ? (
-                <a href={b.link} target="_blank" rel="noopener noreferrer" onClick={onClick} tabIndex={i === index ? 0 : -1}>{img}</a>
+              {!link ? img : external ? (
+                <a href={link} target="_blank" rel="noopener noreferrer" onClick={onClick} tabIndex={i === index ? 0 : -1}>{img}</a>
               ) : (
-                <Link to={b.link} onClick={onClick} tabIndex={i === index ? 0 : -1}>{img}</Link>
+                <Link to={link} onClick={onClick} tabIndex={i === index ? 0 : -1}>{img}</Link>
               )}
             </div>
           );

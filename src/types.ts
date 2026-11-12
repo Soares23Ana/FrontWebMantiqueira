@@ -23,9 +23,21 @@ export interface Categoria {
   id_categoria: number;
   nome: string;
   slug: string;
+  /** Nulo nas categorias principais; o id da principal nas subcategorias (2 níveis). */
+  id_pai?: number | null;
   ordem?: number;
   ativo?: boolean;
   total_produtos?: number;
+  /** Só em GET /categorias (árvore): as subcategorias da principal. */
+  subcategorias?: Categoria[];
+}
+
+export type FaixaCodigo = 'acima_do_limite' | 'disponivel' | 'ultimas_unidades' | 'indisponivel';
+
+/** Faixa de estoque mostrada a visitantes e clientes (a quantidade exata só vai para a equipe). */
+export interface FaixaEstoque {
+  codigo: FaixaCodigo;
+  rotulo: string;
 }
 
 export interface Marca {
@@ -44,12 +56,13 @@ export interface Produto {
   destaques: string[] | null;
   imagem_url: string | null;
   categoria: Categoria | null;
+  subcategoria?: Categoria | null;
   marca: Marca | null;
   multiplo_venda: number;
   disponibilidade: Disponibilidade;
-  // Só para quem está logado:
+  faixa_estoque?: FaixaEstoque;
+  // Só para a equipe (visitante e cliente nunca recebem a quantidade exata):
   estoque?: number;
-  // Só para a equipe:
   estoque_minimo?: number;
   ativo?: boolean;
   criado_em?: string;
@@ -63,7 +76,7 @@ export interface Sugestoes {
 }
 
 export interface Filtros {
-  categorias: (Categoria & { total: number })[];
+  categorias: (Omit<Categoria, 'subcategorias'> & { total: number; subcategorias?: (Omit<Categoria, 'subcategorias'> & { total: number })[] })[];
   marcas: (Marca & { total: number })[];
   disponibilidade: Record<Disponibilidade | 'em_estoque', number>;
 }
@@ -149,8 +162,9 @@ export interface ItemIndisponivel {
   sku: string | null;
   nome: string | null;
   solicitado: number;
-  disponivel: number;
   multiplo_venda: number;
+  /** A quantidade em estoque nunca é informada: só a situação do produto. */
+  disponibilidade?: Disponibilidade;
   motivo: 'produto_inexistente' | 'produto_inativo' | 'multiplo_de_venda' | 'estoque_insuficiente';
 }
 
@@ -163,10 +177,10 @@ export interface RepetirPedido {
     imagem_url: string | null;
     multiplo_venda: number;
     disponibilidade: Disponibilidade;
-    estoque: number;
+    faixa_estoque?: FaixaEstoque;
     quantidade_anterior: number;
     quantidade_sugerida: number;
-    ajuste: null | 'ajustado_ao_multiplo' | 'reduzido_ao_estoque' | 'indisponivel' | 'produto_inativo';
+    ajuste: null | 'ajustado_ao_multiplo' | 'estoque_parcial' | 'indisponivel' | 'produto_inativo';
   }[];
   itens_para_checkout: { id_produto: number; quantidade: number }[];
   itens_ajustados: number;
@@ -183,17 +197,38 @@ export interface Cliente extends ClienteResumo {
   enderecos?: Endereco[];
 }
 
+export type TipoDestino = 'nenhum' | 'produto' | 'categoria' | 'marca' | 'campanha' | 'link';
+
+/** Destino de um banner ou do pop-up, com o link interno já resolvido pela API. */
+export interface Destino {
+  tipo: TipoDestino;
+  id: number | null;
+  link: string | null;
+}
+
 export interface BannerPublico {
   id_banner: number;
   titulo: string;
   link: string | null;
   imagem_url: string;
   ordem: number;
+  destino?: Destino;
+}
+
+export interface PopupPublico {
+  titulo: string;
+  texto: string | null;
+  imagem_url: string | null;
+  destino: Destino;
+  inicio_em: string | null;
+  fim_em: string | null;
 }
 
 export type SituacaoBanner = 'no_ar' | 'agendado' | 'expirado' | 'inativo';
 
 export interface Banner extends BannerPublico {
+  tipo_destino?: TipoDestino;
+  id_destino?: number | null;
   ativo: boolean;
   inicio_em: string | null;
   fim_em: string | null;
@@ -229,6 +264,7 @@ export type SituacaoCampanha = 'agendada' | 'ativa' | 'encerrada';
 
 export interface CampanhaAtiva {
   id_campanha: number;
+  slug?: string;
   titulo: string;
   selo: string | null;
   inicio_em: string;
@@ -238,6 +274,7 @@ export interface CampanhaAtiva {
 
 export interface Campanha {
   id_campanha: number;
+  slug?: string;
   titulo: string;
   selo: string | null;
   inicio_em: string;
@@ -291,12 +328,30 @@ export interface Importacao {
   desativados: number;
   com_erro: number;
   movimentacoes_estoque: number;
+  estoque_descontado?: number;
   mensagem: string | null;
   iniciado_em: string;
   finalizado_em: string | null;
   duracao_ms: number | null;
   usuario: { id_usuario: number; nome: string } | null;
   relatorio?: { erros: ErroImportacao[]; avisos: (string | ErroImportacao)[] };
+}
+
+/** Carrinho guardado na conta do cliente (GET/PUT /carrinho). */
+export interface CarrinhoApi {
+  itens: {
+    id_produto: number;
+    sku: string;
+    nome: string;
+    imagem_url: string | null;
+    quantidade: number;
+    multiplo_venda: number;
+    ativo: boolean;
+    disponibilidade: Disponibilidade;
+    faixa_estoque?: FaixaEstoque;
+  }[];
+  total_itens: number;
+  atualizado_em: string | null;
 }
 
 export interface CartItem {

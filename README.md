@@ -24,12 +24,12 @@ Site de pedidos B2B da **Mantiqueira Distribuidora**, feito como Projeto Integra
 
 ### Loja do cliente
 
-- **Home dirigida pelo painel de conteúdo:** banners, campanhas ativas com selo, destaques, aviso do topo e botão de WhatsApp.
-- **Catálogo:** busca sem acento com sugestões enquanto digita, filtros por categoria, marca e disponibilidade, ordenação e paginação. O estado fica no endereço da página, então o botão voltar do navegador funciona e o link pode ser compartilhado.
+- **Home dirigida pelo painel de conteúdo:** banners com destino (produto, categoria, marca, campanha ou link), pop-up, campanhas ativas com selo, destaques, aviso do topo e botão de WhatsApp.
+- **Catálogo:** busca sem acento com sugestões enquanto digita, filtros por categoria e subcategoria (2 níveis), marca, campanha e disponibilidade, ordenação e paginação. O estado fica no endereço da página, então o botão voltar do navegador funciona e o link pode ser compartilhado.
 - **Produto:** foto com zoom, descrição, destaques e quantidade que respeita a embalagem de venda (múltiplo de venda).
-- **Carrinho e favoritos:** ficam guardados no navegador, com avisos de estoque e de produto indisponível.
+- **Carrinho e favoritos:** para o cliente logado ficam salvos na conta (valem em qualquer computador); para o visitante ficam no navegador e são somados à conta quando ele entra. Mostram a faixa de estoque e avisam de produto indisponível.
 - **Cadastro e entrada:** login único por CNPJ ou e-mail. No cadastro, mostra o nome da empresa na Receita ao completar o CNPJ e preenche o endereço ao completar o CEP.
-- **Checkout:** escolha de endereço, data desejada e observação. Se algum item tiver problema, mostra todos de uma vez, com botão para ajustar.
+- **Checkout:** escolha de endereço, data desejada e observação. Se algum item tiver problema, mostra todos de uma vez, com campo para escolher outra quantidade ou remover o item (a API não informa o estoque exato).
 - **Minha conta:** pedidos com linha do tempo e histórico, "Repetir pedido", cancelamento com motivo, perfil, endereços e troca de senha.
 
 ### Área do gestor (`/gestor`)
@@ -38,12 +38,13 @@ Site de pedidos B2B da **Mantiqueira Distribuidora**, feito como Projeto Integra
 | --- | --- |
 | Painel | Vê pedidos pendentes, estoque baixo, clientes ativos, novos cadastros e alertas de reposição |
 | Pedidos | Busca e filtra, avança o andamento com observação, cancela com motivo obrigatório e exporta planilha |
-| Produtos | Cadastra e edita com foto, ajusta o estoque com observação, vê o histórico e gerencia categorias e marcas |
-| Importação | Envia planilha CSV com modo simulação, relatório de erros por linha e histórico das sincronizações |
-| Clientes | Busca, filtra os novos de 7 dias, bloqueia acesso, corrige dados e define senha temporária |
-| Conteúdo (CMS) | Edita banners, blocos de texto, contatos, aviso do topo e meta de reposição |
+| Produtos | Cadastra e edita com foto, categoria e subcategoria, ajusta o estoque com observação, vê o histórico e gerencia categorias (2 níveis) e marcas |
+| Importação | Envia planilha .xlsx ou CSV com modo simulação, relatório de erros por linha e histórico das sincronizações |
+| Clientes | Busca, filtra os novos de 7 dias, bloqueia acesso, corrige dados, define senha temporária, vê o carrinho atual, anota notas internas e consulta o histórico do cliente |
+| Carrinhos abandonados | Vê quem deixou itens parados, chama pelo WhatsApp e registra o contato |
+| Conteúdo (CMS) | Edita banners (com destino), pop-up, blocos de texto, contatos, aviso do topo e meta de reposição |
 | Campanhas | Cria selo, período e produtos, e encerra campanhas |
-| Métricas | Vê buscas, funil de compra, produtos mais vistos e pedidos, cliques e pedidos por dia, e clientes sem comprar |
+| Métricas | Vê visitantes, buscas, funil de compra, produtos mais vistos e pedidos, cliques e pedidos por dia, e clientes sem comprar |
 | Equipe | Cria e desativa usuários da equipe (só para quem tem a marca de gerenciar a equipe) |
 | Saúde do sistema | Vê o banco, as tarefas automáticas e as últimas sincronizações |
 
@@ -129,7 +130,8 @@ A tela de entrada é única e neutra: não menciona a equipe. O mesmo campo acei
 | `/entrar` e `/cadastro` | Entrada e criação de conta | Todos |
 | `/checkout` | Finalizar o pedido | Cliente |
 | `/minha-conta/pedidos`, `/perfil`, `/enderecos` e `/senha` | Área do cliente | Cliente |
-| `/gestor` e `/gestor/...` | Área da equipe | Equipe |
+| `/produtos?campanha=...&subcategoria=...` | Catálogo filtrado por campanha ou subcategoria (os destinos de banner e pop-up apontam para cá) | Todos |
+| `/gestor` e `/gestor/...` | Área da equipe (inclui `/gestor/carrinhos`, os carrinhos abandonados) | Equipe |
 | `/gestor/equipe` | Gestão da equipe | Equipe com a marca de gerenciar a equipe |
 
 As rotas protegidas redirecionam: sem login, vão para `/entrar` e voltam depois. Um cliente que abre `/gestor` volta para a página inicial.
@@ -171,7 +173,7 @@ public/img/                fotos dos produtos de exemplo e logotipo
 ## Decisões do projeto
 
 - **Nada financeiro nas telas de dados:** sem preço, total, faturamento ou tabela de preço. A API também não envia valores, porque a equipe do projeto não tem acesso ao financeiro.
-- **Visitante** vê só a disponibilidade do produto. **Cliente logado** vê o estoque exato.
+- **Visitante e cliente** veem só a disponibilidade e a faixa de estoque ("Disponível", "Últimas unidades", "Mais de 50 disponíveis"). A quantidade exata só chega para a equipe.
 - **Status do pedido** iguais aos do back: Aguardando Separação, Em Separação, Saiu para Entrega e Entregue (ou Cancelado, com motivo obrigatório).
 - **Nome de exibição:** clientes e pedidos aparecem pela razão social, ou pelo nome do responsável quando não há razão social (`nome_exibicao`).
 - **CNPJ com letras:** a Receita Federal emite esse formato desde julho de 2026. A máscara, a validação (módulo 11, com cada caractere valendo o código ASCII menos 48) e o login aceitam letras nas 12 primeiras posições (`src/utils/cnpj.ts`).
@@ -184,7 +186,7 @@ public/img/                fotos dos produtos de exemplo e logotipo
 ## Limitações conhecidas
 
 - O **texto das páginas de marca** (`src/data/brands.ts`) e os **textos de divulgação da página inicial** (como "frete grátis" e "pedido mínimo") ficam no código. Os de divulgação foram herdados do site original e precisam ser confirmados com a empresa.
-- O **carrinho e os favoritos** ficam no navegador de cada pessoa, não acompanham outro computador.
+- Quem **não está logado** tem o carrinho e os favoritos só no navegador; eles passam para a conta quando a pessoa entra.
 - O front **não tem testes automáticos**. Foi conferido à mão contra a API, e o `npm run build` termina sem erros. Ainda falta testar no celular, em outros navegadores e o envio de planilha e de fotos pela tela.
 - Não há envio de e-mails nem recuperação de senha sozinha: quem esquece a senha chama a empresa pelo WhatsApp, e a equipe define uma senha temporária.
 - As **fotos enviadas** pela equipe ficam no servidor da API. A ideia futura é guardá-las na nuvem.

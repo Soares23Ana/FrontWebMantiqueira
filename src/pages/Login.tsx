@@ -89,7 +89,7 @@ export default function Login() {
         </form>
         <div>
           <h3 className="mb-4 text-xl font-extrabold">Novo cliente? Crie sua conta</h3>
-          <p className="text-muted">Cadastre sua empresa com o CNPJ e o endereço de entrega para ver o estoque e fazer pedidos.</p>
+          <p className="text-muted">Cadastre sua empresa com o CNPJ e o endereço de entrega para consultar a disponibilidade e fazer pedidos.</p>
           <Link to="/cadastro" className="mt-6 block w-full rounded-lg bg-brand px-5 py-3 text-center font-extrabold uppercase text-white hover:bg-brand-dark">
             Criar conta
           </Link>

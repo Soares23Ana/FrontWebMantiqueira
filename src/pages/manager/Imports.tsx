@@ -23,6 +23,9 @@ interface Resultado {
   relatorio: {
     simulado: boolean; linhas: number; criados: number; atualizados: number; inalterados: number; desativados: number;
     com_erro: number; categorias_criadas: number; marcas_criadas: number; movimentacoes_estoque: number;
+    formato?: string; skus_trocados?: number; total_descontado?: number; produtos_com_desconto?: number;
+    abreviacoes_pendentes?: { abreviacao: string; ocorrencias: number; exemplo: string }[];
+    categorias_sem_mapa?: string[]; colunas_ignoradas?: string[];
     erros: ErroImportacao[]; avisos: (string | ErroImportacao)[];
   };
 }
@@ -36,14 +39,17 @@ const STATUS_STYLE: Record<string, string> = {
 
 const TIPO_LABEL: Record<string, string> = {
   importacao_manual: 'Upload manual',
+  catalogo: 'Catálogo (job)',
   carga_completa: 'Carga completa',
   estoque: 'Estoque',
 };
 
-const tipoOptions = ['Todos', 'Upload manual', 'Carga completa', 'Estoque'] as const;
-const tipoValue: Record<(typeof tipoOptions)[number], string> = { Todos: '', 'Upload manual': 'importacao_manual', 'Carga completa': 'carga_completa', Estoque: 'estoque' };
+const tipoOptions = ['Todos', 'Upload manual', 'Catálogo (job)', 'Carga completa', 'Estoque'] as const;
+const tipoValue: Record<(typeof tipoOptions)[number], string> = {
+  Todos: '', 'Upload manual': 'importacao_manual', 'Catálogo (job)': 'catalogo', 'Carga completa': 'carga_completa', Estoque: 'estoque',
+};
 
-// Importação de catálogo/estoque por CSV: é a demonstração da integração de dados.
+// Importação de catálogo/estoque por planilha (.xlsx ou CSV): é a demonstração da integração de dados.
 export default function Imports() {
   const toast = useToast();
   const { refreshCounters } = useManager();
@@ -64,7 +70,9 @@ export default function Imports() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!file) return setFormError('Escolha um arquivo .csv.');
+    if (!file) return setFormError('Escolha uma planilha .xlsx ou um arquivo .csv.');
+    if (!/\.(xlsx|csv)$/i.test(file.name)) return setFormError('Use uma planilha .xlsx ou um arquivo .csv. Para .xls, salve como .xlsx ou CSV.');
+    if (file.size > 5 * 1024 * 1024) return setFormError('O arquivo deve ter até 5 MB.');
     setSending(true);
     setFormError('');
     setResultado(null);
@@ -85,15 +93,15 @@ export default function Imports() {
 
   return (
     <>
-      <SectionHeader title="Importação de catálogo" subtitle="Envie um CSV para criar ou atualizar produtos e estoque. Use a simulação para conferir antes de gravar." />
+      <SectionHeader title="Importação de catálogo" subtitle="Envie uma planilha (.xlsx) ou CSV para criar ou atualizar produtos e estoque. Use a simulação para conferir antes de gravar." />
       <div className="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <form onSubmit={submit} className="rounded-2xl border border-black/10 bg-white p-5">
           <FormError message={formError} />
           <label className="grid cursor-pointer place-items-center gap-2 rounded-2xl border-2 border-dashed border-brand/30 p-8 text-center hover:bg-brand/5">
             <Icon name="upload" className="h-8 w-8 text-brand" />
-            <span className="font-extrabold">{file ? file.name : 'Escolher arquivo CSV'}</span>
-            <span className="text-sm text-muted">Separador ; ou , · UTF-8 ou padrão do Excel · até 5 MB · coluna sku obrigatória</span>
-            <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setResultado(null); }} />
+            <span className="font-extrabold">{file ? file.name : 'Escolher planilha .xlsx ou CSV'}</span>
+            <span className="text-sm text-muted">Primeira aba do .xlsx · CSV com ; ou , · até 5 MB e 20.000 linhas · coluna sku (ou código) obrigatória</span>
+            <input type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="sr-only" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setResultado(null); }} />
           </label>
           <div className="mt-4 grid gap-3 text-sm">
             <label className="flex items-start gap-3">
@@ -109,8 +117,9 @@ export default function Imports() {
             {sending ? 'Processando...' : simular ? 'Simular importação' : 'Importar e gravar'}
           </Button>
           <p className="mt-3 text-xs text-muted">
-            Colunas aceitas: sku, nome, categoria, marca, descricao, destaques, imagem_url, ativo, estoque_minimo, multiplo_venda, estoque.
-            Colunas ausentes não são alteradas. O estoque do arquivo substitui o valor atual.
+            Colunas aceitas: sku, nome, nome_erp, categoria, subcategoria, marca, descricao, destaques, imagem_url, ativo, estoque_minimo,
+            multiplo_venda, estoque, sku_antigo e gerado_em. Colunas ausentes não são alteradas. O estoque da planilha substitui o valor atual,
+            descontando os pedidos feitos depois de gerado_em (preencha essa coluna com a data e hora em que a planilha foi preparada).
           </p>
         </form>
 
@@ -152,6 +161,7 @@ function Report({ r, status, mensagem }: { r: Partial<Resultado['relatorio']> & 
   const stats: [string, number | undefined][] = [
     ['Linhas', r.linhas], ['Criados', r.criados], ['Atualizados', r.atualizados], ['Inalterados', r.inalterados],
     ['Desativados', r.desativados], ['Com erro', r.com_erro], ['Mov. de estoque', r.movimentacoes_estoque],
+    ['SKUs trocados', r.skus_trocados], ['Estoque descontado', r.total_descontado],
   ];
   return (
     <>
@@ -168,6 +178,20 @@ function Report({ r, status, mensagem }: { r: Partial<Resultado['relatorio']> & 
           </div>
         ))}
       </dl>
+      {r.abreviacoes_pendentes && r.abreviacoes_pendentes.length > 0 && (
+        <>
+          <h4 className="mb-2 mt-4 font-extrabold text-amber-700">Abreviações do nome não expandidas</h4>
+          <ul className="grid gap-1 text-sm">
+            {r.abreviacoes_pendentes.map((a) => <li key={a.abreviacao} className="rounded-lg bg-amber-50 px-3 py-1.5"><b>{a.abreviacao}</b> ({a.ocorrencias}x), ex.: {a.exemplo}</li>)}
+          </ul>
+        </>
+      )}
+      {r.categorias_sem_mapa && r.categorias_sem_mapa.length > 0 && (
+        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-1.5 text-sm"><b>Categorias sem mapa:</b> {r.categorias_sem_mapa.join(', ')}</p>
+      )}
+      {r.colunas_ignoradas && r.colunas_ignoradas.length > 0 && (
+        <p className="mt-3 text-xs text-muted">Colunas ignoradas: {r.colunas_ignoradas.join(', ')}.</p>
+      )}
       {r.erros && r.erros.length > 0 && (
         <>
           <h4 className="mb-2 mt-4 font-extrabold text-accent">Erros por linha</h4>

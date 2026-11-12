@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, ScrollRestoration, useLocation } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import Footer from './components/Footer';
@@ -21,10 +22,19 @@ import ProductDetail from './pages/ProductDetail';
 import Register from './pages/Register';
 import { managerRoutes } from './pages/manager/routes';
 import ManagerLayout from './pages/manager/ManagerLayout';
+import { track } from './utils/events';
 import type { TipoUsuario } from './types';
 
 function StoreLayout() {
   const location = useLocation();
+  // Uma visita por aba aberta (a API ainda ignora repetições da mesma sessão no mesmo dia).
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('mantiqueira.visita')) return;
+      sessionStorage.setItem('mantiqueira.visita', '1');
+    } catch { /* sem sessionStorage: registra uma vez por carregamento */ }
+    track({ tipo: 'visita' });
+  }, []);
   return (
     <div className="min-h-screen bg-surface font-sans text-ink">
       <Header />

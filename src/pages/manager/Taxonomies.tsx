@@ -14,24 +14,36 @@ interface Item {
   slug: string;
   ativo: boolean;
   total_produtos: number;
+  /** Só nas categorias: id da principal (nulo nas principais). */
+  id_pai: number | null;
 }
 
 export default function Taxonomies() {
   return (
     <div className="grid gap-6 xl:grid-cols-2">
-      <TaxonomyCard title="Categorias" path="/categorias" listKey="categorias" idKey="id_categoria" />
+      <TaxonomyCard title="Categorias" path="/categorias" listKey="categorias" idKey="id_categoria" hierarquica />
       <TaxonomyCard title="Marcas" path="/marcas" listKey="marcas" idKey="id_marca" />
     </div>
   );
 }
 
 // Lista editável de categorias ou marcas: criar, renomear, ativar/desativar e excluir (só sem produtos).
-function TaxonomyCard({ title, path, listKey, idKey }: { title: string; path: string; listKey: string; idKey: string }) {
+// As categorias têm 2 níveis: principal e subcategoria (o produto aponta para a subcategoria, quando houver).
+function TaxonomyCard({ title, path, listKey, idKey, hierarquica = false }: { title: string; path: string; listKey: string; idKey: string; hierarquica?: boolean }) {
   const toast = useToast();
   const { data, loading, error, reload } = useApi(async () => {
-    const d = await api.get<Record<string, Record<string, unknown>[]>>(path, { incluir_inativos: true });
-    return d[listKey].map((r) => ({ id: r[idKey] as number, nome: r.nome as string, slug: r.slug as string, ativo: r.ativo as boolean, total_produtos: (r.total_produtos as number) ?? 0 }));
+    // plano=true: lista plana (principais e subcategorias, com id_pai), para montar a árvore aqui.
+    const d = await api.get<Record<string, Record<string, unknown>[]>>(path, { incluir_inativos: true, plano: hierarquica || undefined });
+    const itens: Item[] = d[listKey].map((r) => ({
+      id: r[idKey] as number, nome: r.nome as string, slug: r.slug as string, ativo: r.ativo as boolean,
+      total_produtos: (r.total_produtos as number) ?? 0, id_pai: (r.id_pai as number | null | undefined) ?? null,
+    }));
+    if (!hierarquica) return itens;
+    const principais = itens.filter((i) => i.id_pai === null);
+    return principais.flatMap((p) => [p, ...itens.filter((i) => i.id_pai === p.id)]);
   }, [path]);
+  const principais = data?.filter((i) => i.id_pai === null) ?? [];
+  const [idPai, setIdPai] = useState('');
   const [novo, setNovo] = useState('');
   const [editId, setEditId] = useState<number | null>(null);
   const [editNome, setEditNome] = useState('');
@@ -51,7 +63,7 @@ function TaxonomyCard({ title, path, listKey, idKey }: { title: string; path: st
   const create = async (e: FormEvent) => {
     e.preventDefault();
     if (!novo.trim()) return;
-    if (await run(() => api.post(path, { nome: novo.trim() }))) setNovo('');
+    if (await run(() => api.post(path, { nome: novo.trim(), ...(hierarquica ? { id_pai: idPai ? Number(idPai) : null } : {}) }))) setNovo('');
   };
 
   const saveName = async (it: Item) => {
@@ -60,6 +72,7 @@ function TaxonomyCard({ title, path, listKey, idKey }: { title: string; path: st
 
   const remove = (it: Item) => {
     if (it.total_produtos > 0) return toast(`Não dá para excluir: ${it.total_produtos} produto(s) usam “${it.nome}”. Desative em vez de excluir.`, 'error');
+    if (hierarquica && it.id_pai === null && data?.some((x) => x.id_pai === it.id)) return toast(`Não dá para excluir: “${it.nome}” tem subcategorias. Remova ou mova as subcategorias antes.`, 'error');
     if (confirm(`Excluir “${it.nome}”?`)) run(() => api.del(`${path}/${it.id}`));
   };
 
@@ -67,15 +80,22 @@ function TaxonomyCard({ title, path, listKey, idKey }: { title: string; path: st
     <div className="rounded-2xl border border-black/10 bg-white p-5">
       <h3 className="mb-3 font-extrabold">{title}</h3>
       <form onSubmit={create} className="mb-4 flex gap-2">
-        <input value={novo} onChange={(e) => setNovo(e.target.value)} placeholder={`Nova ${title === 'Marcas' ? 'marca' : 'categoria'}`}
+        <input value={novo} onChange={(e) => setNovo(e.target.value)} placeholder={`Nova ${title === 'Marcas' ? 'marca' : idPai ? 'subcategoria' : 'categoria'}`}
           className="min-w-0 flex-1 rounded-full border border-black/10 px-4 py-2 outline-none focus:border-brand" />
+        {hierarquica && (
+          <select value={idPai} onChange={(e) => setIdPai(e.target.value)} aria-label="Dentro de qual categoria principal"
+            className="max-w-40 rounded-full border border-black/10 bg-white px-3 py-2 text-sm">
+            <option value="">Principal</option>
+            {principais.map((p) => <option key={p.id} value={p.id}>em {p.nome}</option>)}
+          </select>
+        )}
         <Button type="submit" variant="primary" className="px-4 py-2 text-sm">Adicionar</Button>
       </form>
       {loading && <Loading className="py-6" />}
       {error && <ErrorState error={error} onRetry={reload} className="py-6" />}
       <ul className="divide-y divide-black/10">
         {data?.map((it: Item) => (
-          <li key={it.id} className={`flex items-center gap-3 py-2 ${it.ativo ? '' : 'opacity-60'}`}>
+          <li key={it.id} className={`flex items-center gap-3 py-2 ${it.id_pai ? 'ml-6 border-l-2 border-brand/20 pl-3' : ''} ${it.ativo ? '' : 'opacity-60'}`}>
             {editId === it.id ? (
               <form className="flex flex-1 gap-2" onSubmit={(e) => { e.preventDefault(); saveName(it); }}>
                 <input autoFocus value={editNome} onChange={(e) => setEditNome(e.target.value)}
@@ -87,7 +107,7 @@ function TaxonomyCard({ title, path, listKey, idKey }: { title: string; path: st
               <>
                 <span className="flex-1">
                   <span className="font-medium">{it.nome}</span>
-                  <span className="block text-xs text-muted">/{it.slug} · {it.total_produtos} produto(s)</span>
+                  <span className="block text-xs text-muted">{it.id_pai ? 'Subcategoria · ' : ''}/{it.slug} · {it.total_produtos} produto(s)</span>
                 </span>
                 <IconButton icon="edit" label={`Renomear ${it.nome}`} onClick={() => { setEditId(it.id); setEditNome(it.nome); }} />
                 <IconButton icon="trash" label={`Excluir ${it.nome}`} danger onClick={() => remove(it)} />

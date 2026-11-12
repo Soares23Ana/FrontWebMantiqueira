@@ -9,7 +9,7 @@ import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useApi } from '../hooks/useApi';
 import { track } from '../utils/events';
-import { dateFromToday } from '../utils/format';
+import { dateFromToday, disponibilidadeLabel } from '../utils/format';
 import { novoUuid } from '../utils/uuid';
 import type { Endereco, ItemIndisponivel, Pedido } from '../types';
 
@@ -31,6 +31,8 @@ export default function Checkout() {
   const [observacao, setObservacao] = useState('');
   const [data, setData] = useState('');
   const [problemas, setProblemas] = useState<ItemIndisponivel[]>([]);
+  // Quantidade nova digitada para cada item sem estoque suficiente (a API não diz quanto há, então o cliente tenta um valor menor).
+  const [novasQuantidades, setNovasQuantidades] = useState<Record<number, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
   const [sending, setSending] = useState(false);
@@ -85,9 +87,35 @@ export default function Checkout() {
     }
   };
 
+  const quantidadeNoCarrinho = (id: number) => items.find((i) => i.id_produto === id)?.quantidade ?? 0;
+
+  // Itens que só podem ser removidos (saíram de linha ou estão indisponíveis) e itens em que o cliente escolhe outra quantidade.
+  const soRemover = (p: ItemIndisponivel) =>
+    p.motivo === 'produto_inexistente' || p.motivo === 'produto_inativo' || p.disponibilidade === 'indisponivel';
+
+  // Sugestão de partida: o múltiplo de venda mais próximo (multiplo_de_venda) ou a metade da quantidade pedida (estoque_insuficiente).
+  const sugestao = (p: ItemIndisponivel) => {
+    const m = Math.max(1, p.multiplo_venda);
+    const atual = quantidadeNoCarrinho(p.id_produto) || p.solicitado;
+    if (p.motivo === 'multiplo_de_venda') return Math.max(m, Math.round(atual / m) * m);
+    return Math.max(m, Math.floor(atual / 2 / m) * m);
+  };
+
+  const quantidadeEscolhida = (p: ItemIndisponivel) => {
+    const n = Number(novasQuantidades[p.id_produto] ?? sugestao(p));
+    const m = Math.max(1, p.multiplo_venda);
+    return Number.isFinite(n) && n >= m ? Math.round(n / m) * m : 0;
+  };
+
   const fix = (p: ItemIndisponivel) => {
-    if (p.disponivel > 0) setQuantity(p.id_produto, p.disponivel);
+    const q = quantidadeEscolhida(p);
+    if (q > 0) setQuantity(p.id_produto, q);
     else remove(p.id_produto);
+    setProblemas((prev) => prev.filter((x) => x.id_produto !== p.id_produto));
+  };
+
+  const removeItem = (p: ItemIndisponivel) => {
+    remove(p.id_produto);
     setProblemas((prev) => prev.filter((x) => x.id_produto !== p.id_produto));
   };
 
@@ -106,11 +134,24 @@ export default function Checkout() {
               <li key={p.id_produto} className="flex flex-wrap items-center gap-3 rounded-xl bg-accent/5 p-3 text-sm">
                 <span className="min-w-40 flex-1">
                   <b>{p.nome ?? `Produto ${p.id_produto}`}</b>
-                  <span className="block text-muted">{MOTIVOS[p.motivo]} Pedido: {p.solicitado}. Disponível agora: {p.disponivel}{p.multiplo_venda > 1 ? ` (múltiplos de ${p.multiplo_venda})` : ''}.</span>
+                  <span className="block text-muted">
+                    {MOTIVOS[p.motivo]} Pedido: {p.solicitado}.
+                    {p.disponibilidade && ` Situação agora: ${disponibilidadeLabel[p.disponibilidade].toLowerCase()}.`}
+                    {p.multiplo_venda > 1 ? ` Vendido em múltiplos de ${p.multiplo_venda}.` : ''}
+                  </span>
                 </span>
-                <button type="button" onClick={() => fix(p)} className="rounded-full bg-accent px-4 py-1.5 font-extrabold text-white">
-                  {p.disponivel > 0 ? `Ajustar para ${p.disponivel}` : 'Remover do carrinho'}
-                </button>
+                {soRemover(p) ? (
+                  <button type="button" onClick={() => removeItem(p)} className="rounded-full bg-accent px-4 py-1.5 font-extrabold text-white">Remover do carrinho</button>
+                ) : (
+                  <span className="flex flex-wrap items-center gap-2">
+                    <input type="number" min={Math.max(1, p.multiplo_venda)} step={Math.max(1, p.multiplo_venda)} aria-label={`Nova quantidade de ${p.nome ?? 'produto'}`}
+                      value={novasQuantidades[p.id_produto] ?? String(sugestao(p))}
+                      onChange={(e) => setNovasQuantidades((prev) => ({ ...prev, [p.id_produto]: e.target.value }))}
+                      className="w-24 rounded-full border border-black/10 bg-white px-3 py-1.5 text-center outline-none focus:border-brand" />
+                    <button type="button" onClick={() => fix(p)} className="rounded-full bg-accent px-4 py-1.5 font-extrabold text-white">Usar esta quantidade</button>
+                    <button type="button" onClick={() => removeItem(p)} className="text-muted underline hover:text-accent">Remover</button>
+                  </span>
+                )}
               </li>
             ))}
           </ul>

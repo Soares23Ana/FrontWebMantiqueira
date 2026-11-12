@@ -79,6 +79,9 @@ export default function ProductDetail() {
             <h1 className="mt-4 text-3xl font-light leading-tight md:text-5xl">{product.nome}</h1>
             <span className="mt-3 text-xs font-medium uppercase tracking-widest text-muted">
               {product.categoria && <Link to={`/categoria/${product.categoria.slug}`} className="hover:underline">{product.categoria.nome}</Link>}
+              {product.categoria && product.subcategoria && (
+                <> / <Link to={`/categoria/${product.categoria.slug}?subcategoria=${product.subcategoria.slug}`} className="hover:underline">{product.subcategoria.nome}</Link></>
+              )}
               {' · '}SKU {product.sku}
             </span>
             {product.descricao && <p className="mt-8 text-lg font-light leading-relaxed">{product.descricao}</p>}
@@ -88,10 +91,10 @@ export default function ProductDetail() {
               </ul>
             )}
             <div className="mt-10 grid gap-1">
-              <Availability value={product.disponibilidade} estoque={product.estoque} />
+              <Availability value={product.disponibilidade} faixa={product.faixa_estoque} estoque={product.estoque} />
               {m > 1 && <p className="text-sm text-muted">Vendido em múltiplos de {m} unidades.</p>}
               {inCart > 0 && <p className="text-sm text-brand">Você já tem {inCart} no carrinho.</p>}
-              {!user && <p className="text-sm text-muted"><Link to="/entrar" className="font-extrabold text-brand">Entre</Link> para ver o estoque exato e fazer pedidos.</p>}
+              {!user && <p className="text-sm text-muted"><Link to="/entrar" className="font-extrabold text-brand">Entre</Link> com o CNPJ da sua empresa para fazer pedidos.</p>}
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <div className="flex items-center border border-ink">

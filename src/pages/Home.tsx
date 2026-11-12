@@ -4,6 +4,7 @@ import BannerCarousel from '../components/BannerCarousel';
 import Benefits from '../components/Benefits';
 import BrandPanels from '../components/BrandPanels';
 import Hero from '../components/Hero';
+import PopupCms from '../components/PopupCms';
 import ProductGrid from '../components/ProductGrid';
 import Reveal from '../components/Reveal';
 import { ErrorState, Loading } from '../components/State';
@@ -28,6 +29,7 @@ export default function Home() {
 
   return (
     <>
+      <PopupCms />
       <Hero />
       {/* Esta seção sobe e cobre o Hero (efeito "uma seção engole a outra"); os banners do CMS abrem a seção. */}
       <div className="relative z-10 -mt-10 rounded-t-[2.5rem] bg-surface pt-4">

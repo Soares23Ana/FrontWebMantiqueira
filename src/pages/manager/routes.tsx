@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import type { RouteObject } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import AbandonedCarts from './AbandonedCarts';
 import Campaigns from './Campaigns';
 import Cms from './Cms';
 import Customers from './Customers';
@@ -24,6 +25,7 @@ export const managerRoutes: RouteObject[] = [
   { path: 'produtos', element: <Products /> },
   { path: 'importacao', element: <Imports /> },
   { path: 'clientes', element: <Customers /> },
+  { path: 'carrinhos', element: <AbandonedCarts /> },
   { path: 'cms', element: <Cms /> },
   { path: 'campanhas', element: <Campaigns /> },
   { path: 'metricas', element: <Metrics /> },

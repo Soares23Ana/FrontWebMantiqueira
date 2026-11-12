@@ -13,16 +13,13 @@ export interface CartIssue {
   blocking: boolean;
 }
 
-/** Confere um item do carrinho contra os dados atuais do produto (estoque, múltiplo, ativo). */
+/** Confere um item do carrinho contra os dados atuais do produto (disponibilidade, múltiplo, ativo). */
 export function cartIssue(item: CartItem, p: Produto | null | undefined): CartIssue | null {
   if (p === undefined) return null;
   if (p === null) return { text: 'Este produto saiu de linha.', blocking: true, fix: { label: 'Remover', quantidade: 0 } };
   if (p.disponibilidade === 'indisponivel') return { text: 'Indisponível no momento.', blocking: true, fix: { label: 'Remover', quantidade: 0 } };
   const m = Math.max(1, p.multiplo_venda);
-  if (p.estoque !== undefined && item.quantidade > p.estoque) {
-    const max = Math.floor(p.estoque / m) * m;
-    return { text: `Só há ${p.estoque} unidade(s) em estoque.`, blocking: true, fix: { label: max > 0 ? `Ajustar para ${max}` : 'Remover', quantidade: max } };
-  }
+  // A API não informa o estoque exato: quem confere a quantidade é o checkout (ITENS_INDISPONIVEIS).
   if (item.quantidade % m !== 0) {
     const q = Math.max(m, Math.round(item.quantidade / m) * m);
     return { text: `Vendido em múltiplos de ${m}.`, blocking: true, fix: { label: `Ajustar para ${q}`, quantidade: q } };
@@ -42,7 +39,7 @@ export default function Cart() {
   return (
     <section className="mx-auto max-w-3xl px-5 py-12">
       <h2 className="text-3xl font-extrabold">Carrinho</h2>
-      <p className="mb-8 text-muted">Revise seus itens antes de finalizar. O carrinho fica salvo neste navegador.</p>
+      <p className="mb-8 text-muted">Revise seus itens antes de finalizar. {user?.tipo === 'cliente' ? 'O carrinho fica salvo na sua conta.' : 'O carrinho fica salvo neste navegador.'}</p>
       {items.length === 0 ? (
         <div className="py-12 text-center text-muted">
           <p className="mb-4">Seu carrinho está vazio.</p>
@@ -62,7 +59,7 @@ export default function Cart() {
                   <div className="min-w-40 flex-1">
                     <Link to={`/produto/${item.id_produto}`} className="font-medium hover:text-brand">{p?.nome ?? item.nome}</Link>
                     <div className="flex flex-wrap gap-x-3 text-sm text-muted">
-                      {p && <Availability value={p.disponibilidade} estoque={p.estoque} />}
+                      {p && <Availability value={p.disponibilidade} faixa={p.faixa_estoque} estoque={p.estoque} />}
                       {m > 1 && <span>Múltiplos de {m}</span>}
                     </div>
                   </div>
@@ -70,8 +67,7 @@ export default function Cart() {
                     <button aria-label="Diminuir" onClick={() => setQuantity(item.id_produto, item.quantidade - m)} className="h-8 w-8 rounded-full bg-surface font-extrabold">−</button>
                     <span className="w-10 text-center">{item.quantidade}</span>
                     <button aria-label="Aumentar" onClick={() => setQuantity(item.id_produto, item.quantidade + m)}
-                      disabled={p?.estoque !== undefined && item.quantidade + m > p.estoque}
-                      className="h-8 w-8 rounded-full bg-surface font-extrabold disabled:opacity-30">+</button>
+                      className="h-8 w-8 rounded-full bg-surface font-extrabold">+</button>
                     <button onClick={() => remove(item.id_produto)} className="ml-2 text-sm text-muted underline hover:text-accent">Remover</button>
                   </div>
                 </div>

@@ -14,6 +14,8 @@ interface Resumo {
   pedidos: { total: number; por_status: Record<StatusPedido, number> };
   unidades_pedidas: number;
   clientes_que_compraram: number;
+  /** Sessões únicas no período (evento "visita"). */
+  visitantes?: { total_sessoes: number; media_diaria: number };
   eventos: Record<string, number>;
 }
 interface Buscas {
@@ -30,7 +32,7 @@ interface Inativos {
 }
 
 const EVENTOS: Record<string, string> = {
-  busca: 'Buscas', busca_sem_resultado: 'Buscas sem resultado', produto_visto: 'Produtos vistos', carrinho_adicionar: 'Adições ao carrinho',
+  visita: 'Visitas', busca: 'Buscas', busca_sem_resultado: 'Buscas sem resultado', produto_visto: 'Produtos vistos', carrinho_adicionar: 'Adições ao carrinho',
   checkout_iniciado: 'Checkouts iniciados', pedido_concluido: 'Pedidos concluídos', banner_clique: 'Cliques em banner', campanha_clique: 'Cliques em campanha',
 };
 
@@ -59,6 +61,8 @@ export default function Metrics() {
 
       {resumo.error ? <ErrorState error={resumo.error} onRetry={resumo.reload} className="py-6" /> : (
         <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatCard label="Visitantes (sessões)" value={resumo.data?.visitantes?.total_sessoes ?? '…'} icon="users"
+            hint={resumo.data?.visitantes ? `média de ${resumo.data.visitantes.media_diaria} por dia` : undefined} />
           <StatCard label="Pedidos no período" value={resumo.data?.pedidos.total ?? '…'} icon="orders" hint={resumo.data ? `${resumo.data.pedidos.por_status.Cancelado} cancelado(s)` : undefined} />
           <StatCard label="Unidades pedidas" value={resumo.data?.unidades_pedidas ?? '…'} icon="box" hint="Sem cancelados" />
           <StatCard label="Clientes que compraram" value={resumo.data?.clientes_que_compraram ?? '…'} icon="users" />

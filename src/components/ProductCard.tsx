@@ -48,7 +48,7 @@ export default function ProductCard({ product }: { product: Produto }) {
           <Link to={href} className="hover:text-brand">{product.nome}</Link>
         </h3>
         <div className="mt-auto pt-2">
-          <Availability value={product.disponibilidade} estoque={product.estoque} />
+          <Availability value={product.disponibilidade} faixa={product.faixa_estoque} estoque={product.estoque} />
           {product.multiplo_venda > 1 && <p className="text-xs text-muted">Vendido em múltiplos de {product.multiplo_venda}</p>}
         </div>
         <Button className="mt-2 disabled:cursor-not-allowed disabled:opacity-40" disabled={unavailable} onClick={addToCart}>

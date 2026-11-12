@@ -11,7 +11,7 @@ export default function Favorites() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-12">
       <h2 className="text-3xl font-extrabold">Favoritos</h2>
-      <p className="mb-8 text-muted">Seus produtos salvos neste navegador.</p>
+      <p className="mb-8 text-muted">Seus produtos salvos. Quando você está logado, eles ficam na sua conta.</p>
       {loading && favIds.length > 0 ? <Loading /> : error ? <ErrorState error={error} onRetry={reload} /> : (
         <ProductGrid products={favorites}
           emptyMessage="Você ainda não tem favoritos. Toque no coração de um produto para salvá-lo." />

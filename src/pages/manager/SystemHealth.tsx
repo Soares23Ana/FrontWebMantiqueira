@@ -12,8 +12,26 @@ interface Job {
   ativo: boolean;
   proxima_execucao: string | null;
   ultima_execucao: string | null;
-  ultimo_resultado: string | null;
+  ultimo_status?: 'sucesso' | 'falha' | 'ignorado' | null;
+  ultima_duracao_ms?: number | null;
+  falhas_seguidas?: number;
+  atrasado?: boolean;
+  situacao?: 'ok' | 'degradado';
+  /** Relatório do job: texto (versão antiga da API) ou lista de arquivos processados. */
+  ultimo_resultado: unknown;
   ultimo_erro: string | null;
+}
+
+/** Texto curto do último resultado de um job (a API devolve a lista de arquivos processados). */
+function resultadoDoJob(r: unknown): string {
+  if (r == null) return '—';
+  if (typeof r === 'string') return r;
+  if (Array.isArray(r)) {
+    if (r.length === 0) return 'Nenhum arquivo para processar';
+    return r.map((x) => (x && typeof x === 'object' && 'arquivo' in x
+      ? `${String((x as { arquivo: unknown }).arquivo)}: ${String((x as { status?: unknown }).status ?? '')}` : JSON.stringify(x))).join('; ');
+  }
+  return JSON.stringify(r);
 }
 
 interface Sincronizacao {
@@ -30,11 +48,12 @@ interface Saude {
   banco: { status: string; latencia_ms: number; migracoes_pendentes: string[] };
   processo: { iniciado_em: string; uptime_segundos: number; node: string; memoria_mb: number };
   jobs: Job[];
-  sincronizacoes: Record<'ultima' | 'ultima_carga_completa' | 'ultima_estoque' | 'ultima_importacao_manual', Sincronizacao | null>;
+  sincronizacoes: Partial<Record<'ultima' | 'ultima_catalogo' | 'ultima_carga_completa' | 'ultima_estoque' | 'ultima_importacao_manual', Sincronizacao | null>>;
 }
 
 const SYNC_LABEL = {
   ultima: 'Última sincronização',
+  ultima_catalogo: 'Último catálogo (job)',
   ultima_carga_completa: 'Última carga completa',
   ultima_estoque: 'Último estoque',
   ultima_importacao_manual: 'Último upload manual',
@@ -101,7 +120,11 @@ export default function SystemHealth() {
                       <td className="py-2 pr-3"><b>{j.nome}</b>{!j.ativo && <span className="ml-1 text-xs text-muted">(desligado)</span>}<span className="block text-xs text-muted">{j.descricao}</span></td>
                       <td>{formatDateTime(j.proxima_execucao)}</td>
                       <td>{formatDateTime(j.ultima_execucao)}</td>
-                      <td className={j.ultimo_erro ? 'text-accent' : ''}>{j.ultimo_erro ?? j.ultimo_resultado ?? '—'}</td>
+                      <td className={j.ultimo_erro || j.situacao === 'degradado' ? 'text-accent' : ''}>
+                        {j.ultimo_status && <b className="mr-1">{j.ultimo_status}</b>}
+                        {j.ultimo_erro ?? resultadoDoJob(j.ultimo_resultado)}
+                        {j.atrasado && <span className="block text-xs">Atrasado</span>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

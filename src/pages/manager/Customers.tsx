@@ -19,12 +19,16 @@ import { useApi, useDebounced } from '../../hooks/useApi';
 import { formatCnpj } from '../../utils/cnpj';
 import { downloadCsv } from '../../utils/csv';
 import { formatDate, formatPhone } from '../../utils/format';
+import CustomerSupport from './CustomerSupport';
+import type { CarrinhoAtual } from './CustomerSupport';
 import type { Cliente, Endereco, Paginacao, StatusPedido } from '../../types';
 
 interface Detalhes {
   cliente: Cliente & { enderecos: Endereco[] };
   historico_pedidos: { id_pedido: number; status: StatusPedido; data_pedido: string; itens: { quantidade: number }[] }[];
   produtos_mais_solicitados: { id_produto: number; nome: string; quantidade_solicitada: number }[];
+  carrinho_atual?: CarrinhoAtual | null;
+  ultimo_evento_em?: string | null;
 }
 
 export default function Customers() {
@@ -240,6 +244,7 @@ function CustomerModal({ id, onClose, onChanged }: { id: number; onClose: () => 
               </ul>
             </div>
           </div>
+          <CustomerSupport id={id} carrinho={data.carrinho_atual} ultimoEvento={data.ultimo_evento_em} />
         </>
       )}
     </Modal>

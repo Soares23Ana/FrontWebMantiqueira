@@ -1,5 +1,5 @@
 import { disponibilidadeLabel } from '../utils/format';
-import type { Disponibilidade } from '../types';
+import type { Disponibilidade, FaixaEstoque } from '../types';
 
 const styles: Record<Disponibilidade, string> = {
   disponivel: 'text-green-700',
@@ -7,12 +7,15 @@ const styles: Record<Disponibilidade, string> = {
   indisponivel: 'text-accent',
 };
 
-// Visitante vê só a disponibilidade; quem está logado vê também o estoque exato.
-export default function Availability({ value, estoque, className = '' }: { value: Disponibilidade; estoque?: number; className?: string }) {
+// Visitantes e clientes veem só a faixa de estoque ("Disponível", "Últimas unidades", "Mais de 50 disponíveis").
+// A quantidade exata (`estoque`) só chega para a equipe e, quando vier, é mostrada junto.
+export default function Availability({ value, faixa, estoque, className = '' }: {
+  value: Disponibilidade; faixa?: FaixaEstoque; estoque?: number; className?: string;
+}) {
   return (
     <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${styles[value]} ${className}`}>
       <span className="h-2 w-2 rounded-full bg-current" aria-hidden="true" />
-      {disponibilidadeLabel[value]}
+      {faixa?.rotulo ?? disponibilidadeLabel[value]}
       {estoque !== undefined && value !== 'indisponivel' && <span className="font-normal text-muted">· {estoque} em estoque</span>}
     </span>
   );
