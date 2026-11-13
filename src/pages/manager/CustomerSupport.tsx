@@ -7,13 +7,14 @@ import ChipFilter from '../../components/manager/ChipFilter';
 import { ErrorState, Loading } from '../../components/State';
 import { useToast } from '../../context/ToastContext';
 import { useApi } from '../../hooks/useApi';
-import { formatDateTime } from '../../utils/format';
+import { formatDateTime, formatTempoParado } from '../../utils/format';
 import type { Paginacao } from '../../types';
 
 export interface CarrinhoAtual {
   itens: { id_produto: number; sku: string; nome: string; quantidade: number }[];
   total_unidades: number;
   ultimo_movimento_em: string;
+  minutos_parado?: number;
   dias_parado: number;
   abandonado: boolean;
   contatado_em: string | null;
@@ -50,7 +51,7 @@ export default function CustomerSupport({ id, carrinho, ultimoEvento }: { id: nu
         {carrinho ? (
           <>
             <p className="text-sm text-muted">
-              {carrinho.total_unidades} unidade(s) · última mudança em {formatDateTime(carrinho.ultimo_movimento_em)} ({carrinho.dias_parado} dia(s))
+              {carrinho.total_unidades} unidade(s) · última mudança em {formatDateTime(carrinho.ultimo_movimento_em)} (parado há {formatTempoParado(carrinho.minutos_parado ?? carrinho.dias_parado * 1440)})
               {carrinho.abandonado && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-extrabold text-amber-800">Abandonado{carrinho.contatado_em ? ' · contatado' : ''}</span>}
             </p>
             <ul className="mt-2 grid gap-1 text-sm">

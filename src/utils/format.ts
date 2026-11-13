@@ -38,6 +38,13 @@ export function formatCep(value: string): string {
   return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
 }
 
+/** Tempo parado em texto curto: "20 min", "3 h" ou "5 dia(s)" (usa a maior unidade inteira). */
+export function formatTempoParado(minutos: number): string {
+  if (minutos < 60) return `${minutos} min`;
+  if (minutos < 1440) return `${Math.floor(minutos / 60)} h`;
+  return `${Math.floor(minutos / 1440)} dia(s)`;
+}
+
 export const disponibilidadeLabel = {
   disponivel: 'Disponível',
   ultimas_unidades: 'Últimas unidades',
