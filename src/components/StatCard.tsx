@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import Icon from './Icon';
 import type { IconName } from './Icon';
 
@@ -7,11 +8,13 @@ interface Props {
   icon?: IconName;
   hint?: string;
   highlight?: boolean; // vermelho quando há algo a resolver
+  /** Se vier, o cartão inteiro vira um link para a tela de detalhes. */
+  to?: string;
 }
 
-export default function StatCard({ label, value, icon, hint, highlight = false }: Props) {
+export default function StatCard({ label, value, icon, hint, highlight = false, to }: Props) {
   const alert = highlight && Number(value) > 0;
-  return (
+  const cartao = (
     <div className={`rounded-2xl border p-5 ${alert ? 'border-accent/40 bg-accent/5' : 'border-black/10 bg-white'}`}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm text-muted">{label}</p>
@@ -24,5 +27,12 @@ export default function StatCard({ label, value, icon, hint, highlight = false }
       <p className={`mt-1 text-2xl font-extrabold sm:text-3xl ${alert ? 'text-accent' : 'text-brand'}`}>{value}</p>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </div>
+  );
+  if (!to) return cartao;
+  return (
+    <Link to={to} aria-label={`${label}: ver detalhes`}
+      className="block rounded-2xl transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+      {cartao}
+    </Link>
   );
 }

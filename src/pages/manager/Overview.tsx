@@ -34,12 +34,10 @@ export default function Overview() {
       <SectionHeader title="Painel de controle" subtitle="Resumo da operação da distribuidora." />
       {painel.error ? <ErrorState error={painel.error} onRetry={painel.reload} className="py-6" /> : (
         <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard label="Pedidos pendentes" value={painel.data?.pedidos_pendentes ?? '…'} icon="orders" hint="Aguardando + em separação" />
-          <StatCard label="Estoque baixo" value={painel.data?.estoque_baixo ?? '…'} icon="alert" highlight hint="No mínimo ou abaixo dele" />
-          <StatCard label="Clientes ativos" value={painel.data?.clientes_ativos ?? '…'} icon="users" hint="Com acesso liberado" />
-          <Link to="/gestor/clientes?novos=7" aria-label="Ver os novos cadastros dos últimos 7 dias" className="block transition hover:-translate-y-0.5">
-            <StatCard label="Novos cadastros (7 dias)" value={contadores.data?.clientes_novos_7_dias ?? '…'} icon="users" hint="Ver quem acabou de se cadastrar" />
-          </Link>
+          <StatCard label="Pedidos pendentes" value={painel.data?.pedidos_pendentes ?? '…'} icon="orders" hint="Aguardando + em separação" to="/gestor/pedidos" />
+          <StatCard label="Estoque baixo" value={painel.data?.estoque_baixo ?? '…'} icon="alert" highlight hint="No mínimo ou abaixo dele" to="/gestor/produtos" />
+          <StatCard label="Clientes ativos" value={painel.data?.clientes_ativos ?? '…'} icon="users" hint="Com acesso liberado" to="/gestor/clientes" />
+          <StatCard label="Novos cadastros (7 dias)" value={contadores.data?.clientes_novos_7_dias ?? '…'} icon="users" hint="Ver quem acabou de se cadastrar" to="/gestor/clientes?novos=7" />
         </div>
       )}
 
