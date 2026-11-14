@@ -114,7 +114,7 @@ export default function Customers() {
               <td className="px-4 text-sm">{c.cidade ?? <span className="text-muted">—</span>}</td>
               <td className="px-4 font-extrabold">{c.total_pedidos ?? 0}</td>
               <td className="px-4"><Toggle checked={c.ativo} label={`Ativar ${c.nome_exibicao}`} onChange={(v) => toggleActive(c, v)} /></td>
-              <td className="px-4 text-right"><Button variant="primary" className="px-4 py-1.5 text-sm" onClick={() => setOpenId(c.id_usuario)}>Detalhes</Button></td>
+              <td className="px-4 text-right"><Button variant="primary" className="px-3 py-1 text-sm" onClick={() => setOpenId(c.id_usuario)}>Detalhes</Button></td>
             </tr>
           ))}
         </TableCard>

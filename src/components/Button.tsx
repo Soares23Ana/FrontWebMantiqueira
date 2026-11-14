@@ -10,9 +10,12 @@ const styles: Record<Variant, string> = {
 };
 
 export default function Button({ variant = 'accent', className = '', ...rest }: Props) {
+  // O espaçamento padrão (px-5 py-3) só vale quando a tela não define o próprio: sem isso, "px-3 py-1" não
+  // vence "px-5 py-3" e os botões pequenos ficavam grandes.
+  const padrao = `${/(^|\s)px-/.test(className) ? '' : 'px-5'} ${/(^|\s)py-/.test(className) ? '' : 'py-3'}`;
   return (
     <button
-      className={`rounded-full px-5 py-3 font-extrabold transition ${styles[variant]} ${className}`}
+      className={`rounded-full ${padrao} font-extrabold transition ${styles[variant]} ${className}`}
       {...rest}
     />
   );

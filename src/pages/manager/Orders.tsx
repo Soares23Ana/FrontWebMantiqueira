@@ -98,7 +98,7 @@ export default function Orders() {
               <td className="px-4">{o.total_itens}</td>
               <td className="px-4"><StatusBadge status={o.status} /></td>
               <td className="px-4 text-right">
-                <Button variant="primary" className="px-4 py-1.5 text-sm" onClick={() => setOpen(o.id_pedido)}>Detalhes</Button>
+                <Button variant="primary" className="px-3 py-1 text-sm" onClick={() => setOpen(o.id_pedido)}>Detalhes</Button>
               </td>
             </tr>
           ))}
