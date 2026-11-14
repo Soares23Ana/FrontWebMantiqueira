@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import { api, ApiError, errorMessage } from '../../api/client';
 import Button from '../../components/Button';
-import Field from '../../components/Field';
+import { PasswordField } from '../../components/Field';
 import { FormError } from '../../components/State';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -41,9 +41,9 @@ export default function Password() {
     <form onSubmit={submit} noValidate className="max-w-md rounded-3xl bg-white p-6">
       <p className="text-sm text-muted">Recebeu uma senha temporária da equipe? Troque por uma só sua aqui. Depois da troca você entra de novo com a senha nova.</p>
       <FormError message={formError} />
-      <Field label="Senha atual" type="password" autoComplete="current-password" value={form.senha_atual} onChange={(e) => setForm({ ...form, senha_atual: e.target.value })} error={errors.senha_atual} />
-      <Field label="Nova senha (8 a 72 caracteres)" type="password" autoComplete="new-password" value={form.nova_senha} onChange={(e) => setForm({ ...form, nova_senha: e.target.value })} error={errors.nova_senha} />
-      <Field label="Confirmar nova senha" type="password" autoComplete="new-password" value={form.confirmar} onChange={(e) => setForm({ ...form, confirmar: e.target.value })} error={errors.confirmar} />
+      <PasswordField label="Senha atual" autoComplete="current-password" value={form.senha_atual} onChange={(e) => setForm({ ...form, senha_atual: e.target.value })} error={errors.senha_atual} />
+      <PasswordField label="Nova senha (8 a 72 caracteres)" autoComplete="new-password" value={form.nova_senha} onChange={(e) => setForm({ ...form, nova_senha: e.target.value })} error={errors.nova_senha} />
+      <PasswordField label="Confirmar nova senha" autoComplete="new-password" value={form.confirmar} onChange={(e) => setForm({ ...form, confirmar: e.target.value })} error={errors.confirmar} />
       <Button type="submit" variant="primary" disabled={sending} className="mt-6 disabled:opacity-60">{sending ? 'Salvando...' : 'Trocar senha'}</Button>
     </form>
   );

@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, ApiError, errorMessage, fetchAllPages } from '../../api/client';
 import Button from '../../components/Button';
-import Field from '../../components/Field';
+import Field, { PasswordField } from '../../components/Field';
 import Icon from '../../components/Icon';
 import ChipFilter from '../../components/manager/ChipFilter';
 import Modal from '../../components/manager/Modal';
@@ -200,7 +200,7 @@ function CustomerModal({ id, onClose, onChanged }: { id: number; onClose: () => 
             <h4 className="font-extrabold">Senha temporária</h4>
             <p className="text-sm text-muted">Para o cliente que esqueceu a senha. Informe a senha por telefone/WhatsApp e oriente a troca em “Minha conta”.</p>
             <div className="flex flex-wrap items-end gap-2">
-              <Field className="min-w-48 flex-1" label="Nova senha (8 a 72 caracteres)" value={senha} onChange={(e) => setSenha(e.target.value)} error={senhaErr} autoComplete="off" />
+              <PasswordField visivelInicial className="min-w-48 flex-1" label="Nova senha (8 a 72 caracteres)" value={senha} onChange={(e) => setSenha(e.target.value)} error={senhaErr} autoComplete="new-password" />
               <Button type="button" variant="ghost" className="mb-0.5 px-4 py-2 text-sm" onClick={generate}>Gerar</Button>
               <Button type="submit" variant="primary" disabled={senha.length < 8} className="mb-0.5 px-4 py-2 text-sm disabled:opacity-40">Definir</Button>
             </div>

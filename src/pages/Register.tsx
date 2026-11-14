@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError, errorMessage } from '../api/client';
 import AddressFields, { cleanAddress, emptyAddress } from '../components/AddressFields';
 import Button from '../components/Button';
-import Field from '../components/Field';
+import Field, { PasswordField } from '../components/Field';
 import Logo from '../components/Logo';
 import { FormError } from '../components/State';
 import { formatCnpj, isValidCnpj, normalizarCnpj } from '../utils/cnpj';
@@ -122,8 +122,8 @@ export default function Register() {
           <Field label="E-mail" type="email" value={form.email} onChange={set('email')} error={errors.email} autoComplete="email" />
           <Field label="Telefone (com DDD)" inputMode="tel" placeholder="(19) 99999-0000" value={form.telefone} onChange={set('telefone')} error={errors.telefone} />
           <span className="hidden sm:block" />
-          <Field label="Senha" type="password" value={form.senha} onChange={set('senha')} error={errors.senha} autoComplete="new-password" />
-          <Field label="Confirmar senha" type="password" value={form.confirmar} onChange={set('confirmar')} error={errors.confirmar} autoComplete="new-password" />
+          <PasswordField label="Senha" value={form.senha} onChange={set('senha')} error={errors.senha} autoComplete="new-password" />
+          <PasswordField label="Confirmar senha" value={form.confirmar} onChange={set('confirmar')} error={errors.confirmar} autoComplete="new-password" />
         </div>
         <h3 className="mt-8 font-extrabold">Endereço de entrega</h3>
         <AddressFields value={endereco} onChange={setEndereco} errors={errors} prefix="endereco." />

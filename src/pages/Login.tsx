@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError, errorMessage } from '../api/client';
 import Button from '../components/Button';
-import Field from '../components/Field';
+import Field, { PasswordField } from '../components/Field';
 import Logo from '../components/Logo';
 import { FormError } from '../components/State';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +22,6 @@ export default function Login() {
   const cadastroMsg = state?.cadastro;
   const [identificador, setIdentificador] = useState('');
   const [senha, setSenha] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({ identificador: '', senha: '' });
   const [formError, setFormError] = useState('');
   const [sending, setSending] = useState(false);
@@ -76,9 +75,8 @@ export default function Login() {
           <FormError message={formError} />
           <Field label="CNPJ ou e-mail" value={identificador} placeholder="00.000.000/0000-00" autoComplete="username"
             autoCapitalize="none" spellCheck={false} onChange={(e) => onChange(e.target.value)} error={errors.identificador} />
-          <Field label="Senha" type={showPassword ? 'text' : 'password'} value={senha} placeholder="Senha" autoComplete="current-password"
-            onChange={(e) => setSenha(e.target.value)} error={errors.senha}
-            adornment={<button type="button" onClick={() => setShowPassword(!showPassword)} className="text-sm font-extrabold text-brand">{showPassword ? 'Ocultar' : 'Mostrar'}</button>} />
+          <PasswordField label="Senha" value={senha} placeholder="Senha" autoComplete="current-password"
+            onChange={(e) => setSenha(e.target.value)} error={errors.senha} />
           <p className="my-4 text-right text-sm text-muted">
             Esqueceu a senha? {config?.whatsapp ? (
               <a href={`https://wa.me/${config.whatsapp}?text=${encodeURIComponent('Olá! Esqueci a senha do site e preciso de uma senha temporária.')}`}

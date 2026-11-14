@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
+import Icon from './Icon';
 
 type Props = ComponentProps<'input'> & {
   label: string;
@@ -19,6 +21,26 @@ export default function Field({ label, error, adornment, mandatory = true, class
       </span>
       {error && <small role="alert" className="text-accent">{error}</small>}
     </label>
+  );
+}
+
+type PasswordProps = Omit<ComponentProps<typeof Field>, 'type' | 'adornment'> & {
+  /** Começa com a senha visível (ex.: senha temporária que a equipe acabou de gerar). */
+  visivelInicial?: boolean;
+};
+
+// Campo de senha com o olhinho para mostrar ou esconder o que foi digitado.
+export function PasswordField({ visivelInicial = false, ...props }: PasswordProps) {
+  const [visivel, setVisivel] = useState(visivelInicial);
+  const rotulo = visivel ? 'Ocultar senha' : 'Mostrar senha';
+  return (
+    <Field {...props} type={visivel ? 'text' : 'password'}
+      adornment={
+        <button type="button" onClick={() => setVisivel((v) => !v)} aria-label={rotulo} title={rotulo} aria-pressed={visivel}
+          className="grid h-9 w-9 place-items-center rounded-full text-muted transition hover:text-brand">
+          <Icon name={visivel ? 'eyeOff' : 'eye'} className="h-5 w-5" />
+        </button>
+      } />
   );
 }
 

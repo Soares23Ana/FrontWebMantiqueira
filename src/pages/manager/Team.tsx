@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { api, ApiError, errorMessage } from '../../api/client';
 import Button from '../../components/Button';
-import Field from '../../components/Field';
+import Field, { PasswordField } from '../../components/Field';
 import Icon from '../../components/Icon';
 import IconButton from '../../components/manager/IconButton';
 import Modal from '../../components/manager/Modal';
@@ -103,7 +103,7 @@ function MemberModal({ membro, onClose, onSaved }: { membro: MembroEquipe | null
           <Field label="Cargo" mandatory={false} placeholder="Ex.: Estoquista" value={form.cargo} onChange={set('cargo')} error={errors.cargo} />
           <Field label="Telefone" mandatory={false} value={form.telefone} onChange={set('telefone')} error={errors.telefone} />
         </div>
-        <Field label={membro ? 'Nova senha (deixe vazio para manter)' : 'Senha (8 a 72 caracteres)'} mandatory={!membro} type="password"
+        <PasswordField label={membro ? 'Nova senha (deixe vazio para manter)' : 'Senha (8 a 72 caracteres)'} mandatory={!membro}
           autoComplete="new-password" value={form.senha} onChange={set('senha')} error={errors.senha} />
         <label className="mt-4 flex items-center gap-2 text-sm"><Toggle checked={gerencia} label="Gerencia a equipe" onChange={setGerencia} /> Pode gerenciar a equipe</label>
         <div className="mt-6 flex justify-end gap-2">
