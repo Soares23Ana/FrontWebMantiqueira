@@ -72,7 +72,7 @@ export default function MyOrderDetail() {
       <ul className="divide-y divide-black/10 rounded-2xl border border-black/10">
         {p.itens.map((i) => (
           <li key={i.id_produto} className="flex items-center gap-3 p-3">
-            <img src={imageUrl(i.imagem_url)} alt="" className="h-12 w-12 rounded-lg object-contain" />
+            <img src={imageUrl(i.imagem_url)} alt="" className="h-12 w-12 rounded-lg object-contain foto-produto" />
             <Link to={`/produto/${i.id_produto}`} className="flex-1 hover:text-brand">{i.nome}</Link>
             <b>{i.quantidade}</b>
           </li>

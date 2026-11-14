@@ -136,7 +136,7 @@ export async function fetchAllPages<T>(path: string, key: string, query: Query =
 
 /** Imagens em /arquivos/... são servidas pela API; as de /img/... ficam no próprio front. */
 export function imageUrl(url: string | null | undefined): string {
-  if (!url) return '/logo-mantiqueira.svg';
+  if (!url) return '/logo-vertical.png';
   if (url.startsWith('/arquivos/')) return `${API_ORIGIN}${url}`;
   return url;
 }

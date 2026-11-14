@@ -55,7 +55,7 @@ export default function Cart() {
             return (
               <div key={item.id_produto} className={`mb-3 rounded-2xl border bg-white p-3 ${issue?.blocking ? 'border-accent/40' : 'border-black/10'}`}>
                 <div className="flex flex-wrap items-center gap-4">
-                  <img src={imageUrl(p?.imagem_url ?? item.imagem_url)} alt="" className="h-16 w-16 rounded-xl object-contain" />
+                  <img src={imageUrl(p?.imagem_url ?? item.imagem_url)} alt="" className="h-16 w-16 rounded-xl object-contain foto-produto" />
                   <div className="min-w-40 flex-1">
                     <Link to={`/produto/${item.id_produto}`} className="font-medium hover:text-brand">{p?.nome ?? item.nome}</Link>
                     <div className="flex flex-wrap gap-x-3 text-sm text-muted">

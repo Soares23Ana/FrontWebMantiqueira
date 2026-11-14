@@ -99,7 +99,7 @@ export default function SearchAutocomplete({ className = '' }: { className?: str
               <button type="button" onMouseEnter={() => setActive(i)} onClick={() => go(o.to)}
                 className={`flex w-full items-center gap-3 rounded-xl p-2 text-left ${i === active ? 'bg-surface' : ''}`}>
                 {o.image !== undefined ? (
-                  <img src={imageUrl(o.image)} alt="" className="h-10 w-10 shrink-0 rounded-lg object-contain" />
+                  <img src={imageUrl(o.image)} alt="" className="h-10 w-10 shrink-0 rounded-lg object-contain foto-produto" />
                 ) : (
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand/10 text-brand"><Icon name="search" className="h-4 w-4" /></span>
                 )}

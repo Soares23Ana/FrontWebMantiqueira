@@ -4,6 +4,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError, errorMessage } from '../api/client';
 import Button from '../components/Button';
 import Field from '../components/Field';
+import Logo from '../components/Logo';
 import { FormError } from '../components/State';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
@@ -64,6 +65,7 @@ export default function Login() {
 
   return (
     <section className="mx-auto max-w-5xl px-5 py-12">
+      <Logo variante="vertical" className="mx-auto mb-6 h-28" />
       <h2 className="mb-10 text-center text-3xl font-extrabold">Entrar</h2>
       {(cadastroMsg || expiredMessage) && (
         <p role="status" className="mx-auto mb-6 max-w-xl rounded-xl bg-white p-4 text-center font-medium text-brand">{cadastroMsg ?? expiredMessage}</p>

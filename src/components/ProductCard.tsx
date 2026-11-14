@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { imageUrl } from '../api/client';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
+import { useRequireLogin } from '../hooks/useRequireLogin';
 import { useToast } from '../context/ToastContext';
 import type { Produto } from '../types';
 import Availability from './Availability';
@@ -12,18 +13,20 @@ export default function ProductCard({ product }: { product: Produto }) {
   const { add, favIds, toggleFavorite } = useCart();
   const { selos } = useStore();
   const toast = useToast();
+  const exigirLogin = useRequireLogin();
   const href = `/produto/${product.id_produto}`;
   const unavailable = product.disponibilidade === 'indisponivel';
   const tags = selos.get(product.id_produto) ?? [];
 
   const addToCart = () => {
+    if (!exigirLogin('carrinho')) return;
     const r = add(product);
     toast(r.message, r.ok ? 'success' : 'error');
   };
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-black/10 bg-white transition hover:-translate-y-1 hover:shadow-xl">
-      <div className="relative flex h-52 items-center justify-center p-4">
+      <div className="foto-produto relative flex h-52 items-center justify-center p-4">
         <Link to={href} className="h-full" tabIndex={-1}>
           <img src={imageUrl(product.imagem_url)} alt={product.nome} loading="lazy"
             className={`h-full max-w-full object-contain transition duration-500 group-hover:scale-110 ${unavailable ? 'opacity-50' : ''}`} />
@@ -39,7 +42,7 @@ export default function ProductCard({ product }: { product: Produto }) {
           className="absolute inset-x-6 bottom-3 border border-ink bg-white/85 py-2 text-center text-xs font-medium uppercase tracking-widest opacity-0 backdrop-blur transition duration-300 group-hover:opacity-100">
           Ver produto
         </Link>
-        <HeartButton active={favIds.includes(product.id_produto)} onToggle={() => toggleFavorite(product.id_produto)}
+        <HeartButton active={favIds.includes(product.id_produto)} onToggle={() => exigirLogin('favorito') && toggleFavorite(product.id_produto)}
           className="absolute right-3 top-3 h-10 w-10 rounded-full bg-white shadow" />
       </div>
       <div className="flex flex-1 flex-col gap-1 p-4">

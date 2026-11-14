@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { imageUrl } from '../api/client';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import { useRequireLogin } from '../hooks/useRequireLogin';
 import Button from './Button';
 import Icon from './Icon';
 import type { Produto } from '../types';
@@ -17,6 +18,7 @@ export default function BrandShowcase({ products, color }: Props) {
   const [index, setIndex] = useState(0);
   const { add } = useCart();
   const toast = useToast();
+  const exigirLogin = useRequireLogin();
   if (products.length === 0) return null;
   const i = Math.min(index, products.length - 1);
   const p = products[i];
@@ -46,7 +48,7 @@ export default function BrandShowcase({ products, color }: Props) {
             </Link>
             <Button className="!rounded-none !px-5 !py-2 !text-xs !font-medium uppercase tracking-widest disabled:opacity-40"
               disabled={p.disponibilidade === 'indisponivel'}
-              onClick={() => { const r = add(p); toast(r.message, r.ok ? 'success' : 'error'); }}>
+              onClick={() => { if (!exigirLogin('carrinho')) return; const r = add(p); toast(r.message, r.ok ? 'success' : 'error'); }}>
               Adicionar
             </Button>
           </div>

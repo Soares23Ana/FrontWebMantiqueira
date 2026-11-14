@@ -41,9 +41,9 @@ export function toMultiple(qty: number, multiplo: number, max?: number): number 
 
 const paraApi = (items: CartItem[]) => ({ itens: items.map((i) => ({ id_produto: i.id_produto, quantidade: i.quantidade })) });
 
-// Visitante: carrinho e favoritos ficam no navegador. Cliente logado: ficam na conta (GET/PUT /carrinho e /favoritos),
-// valem em qualquer aparelho e alimentam o painel de carrinhos abandonados. O navegador guarda uma cópia
-// para o carrinho aparecer na hora ao recarregar a página.
+// Carrinho e favoritos são do cliente logado: ficam na conta (GET/PUT /carrinho e /favoritos), valem em qualquer
+// aparelho e alimentam o painel de carrinhos abandonados. O navegador guarda uma cópia só para o carrinho
+// aparecer na hora ao recarregar a página. Visitante não tem carrinho nem favoritos (é levado ao login).
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const isCliente = user?.tipo === 'cliente';
@@ -58,6 +58,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   clienteRef.current = isCliente;
   /** Id do cliente cujo carrinho e favoritos já foram carregados da API (null = nenhum). */
   const syncedFor = useRef<number | null>(null);
+  // Visitante não tem carrinho nem favoritos: só quem entrou como cliente (a tela leva os outros para o login).
+  const VAZIO_ITENS = useRef<CartItem[]>([]).current;
+  const VAZIO_FAV = useRef<number[]>([]).current;
 
   // Entrou ou saiu da conta: carrega o que está salvo na conta e junta com o que o visitante já tinha escolhido.
   useEffect(() => {
@@ -67,14 +70,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         syncedFor.current = null;
         setItems([]);
         setFavIds([]);
+        writeJson(CART_KEY, []);
+        writeJson(FAV_KEY, []);
       }
       return;
     }
     if (syncedFor.current === user.id) return;
     let cancelled = false;
     (async () => {
-      const locais = itemsRef.current;
-      const favLocais = favRef.current;
       try {
         const [cart, favs] = await Promise.all([
           api.get<CarrinhoApi>('/carrinho'),
@@ -84,13 +87,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const doServidor: CartItem[] = cart.itens.map((i) => ({
           id_produto: i.id_produto, quantidade: i.quantidade, nome: i.nome, imagem_url: i.imagem_url, multiplo_venda: i.multiplo_venda,
         }));
-        const somenteLocais = locais.filter((l) => !doServidor.some((s) => s.id_produto === l.id_produto));
-        const idsServidor = favs.map((p) => p.id_produto);
-        const favSomenteLocais = favLocais.filter((id) => !idsServidor.includes(id));
         syncedFor.current = user.id;
-        setItems([...doServidor, ...somenteLocais]);
-        setFavIds([...idsServidor, ...favSomenteLocais]);
-        await Promise.all(favSomenteLocais.map((id) => api.put(`/favoritos/${id}`).catch(() => {})));
+        setItems(doServidor);
+        setFavIds(favs.map((p) => p.id_produto));
       } catch {
         // Sem resposta da API: segue com o que está no navegador e tenta salvar nas próximas mudanças.
         if (!cancelled) syncedFor.current = user.id;
@@ -111,6 +110,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => writeJson(FAV_KEY, favIds), [favIds]);
 
   const add = useCallback((produto: ProdutoBasico, quantidade?: number): AddResult => {
+    if (!clienteRef.current) return { ok: false, message: 'Entre com o CNPJ da sua empresa para adicionar ao carrinho.' };
     if (produto.disponibilidade === 'indisponivel') {
       return { ok: false, message: 'Produto indisponível no momento.' };
     }
@@ -140,6 +140,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const replaceAll = useCallback((next: CartItem[]) => setItems(next), []);
 
   const toggleFavorite = useCallback((id: number) => {
+    if (!clienteRef.current) return;
     const tinha = favRef.current.includes(id);
     const next = tinha ? favRef.current.filter((i) => i !== id) : [...favRef.current, id];
     favRef.current = next;
@@ -151,10 +152,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const count = items.reduce((s, i) => s + i.quantidade, 0);
+  const itensVisiveis = isCliente ? items : VAZIO_ITENS;
+  const favoritosVisiveis = isCliente ? favIds : VAZIO_FAV;
+  const count = itensVisiveis.reduce((s, i) => s + i.quantidade, 0);
   const value = useMemo(
-    () => ({ items, count, add, setQuantity, remove, clear, replaceAll, favIds, toggleFavorite }),
-    [items, count, add, setQuantity, remove, clear, replaceAll, favIds, toggleFavorite],
+    () => ({ items: itensVisiveis, count, add, setQuantity, remove, clear, replaceAll, favIds: favoritosVisiveis, toggleFavorite }),
+    [itensVisiveis, count, add, setQuantity, remove, clear, replaceAll, favoritosVisiveis, toggleFavorite],
   );
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

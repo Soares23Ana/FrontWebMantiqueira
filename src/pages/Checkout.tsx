@@ -192,7 +192,7 @@ export default function Checkout() {
           <ul className="grid max-h-80 gap-2 overflow-y-auto">
             {items.map((i) => (
               <li key={i.id_produto} className={`flex items-center gap-3 text-sm ${problemas.some((p) => p.id_produto === i.id_produto) ? 'text-accent' : ''}`}>
-                <img src={imageUrl(i.imagem_url)} alt="" className="h-10 w-10 shrink-0 rounded-lg object-contain" />
+                <img src={imageUrl(i.imagem_url)} alt="" className="h-10 w-10 shrink-0 rounded-lg object-contain foto-produto" />
                 <span className="min-w-0 flex-1 truncate">{i.nome}</span>
                 <b>{i.quantidade}</b>
               </li>

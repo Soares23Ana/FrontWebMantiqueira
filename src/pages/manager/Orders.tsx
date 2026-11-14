@@ -207,7 +207,7 @@ function OrderDetailModal({ id, onClose, onChanged }: { id: number; onClose: () 
                   {p.itens.map((item) => (
                     <tr key={item.id_produto}>
                       <td className="flex items-center gap-3 p-3">
-                        <img src={imageUrl(item.imagem_url)} alt="" className="h-10 w-10 rounded-lg object-contain" />
+                        <img src={imageUrl(item.imagem_url)} alt="" className="h-10 w-10 rounded-lg object-contain foto-produto" />
                         <span>{item.nome}</span>
                       </td>
                       <td className="text-muted">{item.sku}</td>

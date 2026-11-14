@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { toMultiple, useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import { useToast } from '../context/ToastContext';
+import { useRequireLogin } from '../hooks/useRequireLogin';
 import { brands } from '../data/brands';
 import { useApi } from '../hooks/useApi';
 import { track } from '../utils/events';
@@ -23,6 +24,7 @@ export default function ProductDetail() {
   const { add, items, favIds, toggleFavorite } = useCart();
   const { selos } = useStore();
   const toast = useToast();
+  const exigirLogin = useRequireLogin();
   const detalhe = useApi(() => api.get<{ produto: Produto }>(`/produtos/${encodeURIComponent(id)}`), [id, user?.id]);
   const product = detalhe.data?.produto;
   const marcaSlug = product?.marca?.slug;
@@ -52,6 +54,7 @@ export default function ProductDetail() {
   const tags = selos.get(product.id_produto) ?? [];
 
   const addToCart = () => {
+    if (!exigirLogin('carrinho')) return;
     const r = add(product, toMultiple(qty, m));
     toast(r.message, r.ok ? 'success' : 'error');
   };
@@ -109,7 +112,7 @@ export default function ProductDetail() {
                 className="flex-1 border border-ink px-6 py-3 text-xs font-medium uppercase tracking-widest transition hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-40">
                 {unavailable ? 'Indisponível' : 'Adicionar ao carrinho'}
               </button>
-              <HeartButton active={favIds.includes(product.id_produto)} onToggle={() => toggleFavorite(product.id_produto)}
+              <HeartButton active={favIds.includes(product.id_produto)} onToggle={() => exigirLogin('favorito') && toggleFavorite(product.id_produto)}
                 className="relative h-12 w-12 border border-ink" />
             </div>
           </div>

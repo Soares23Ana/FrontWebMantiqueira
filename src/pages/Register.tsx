@@ -5,6 +5,7 @@ import { api, ApiError, errorMessage } from '../api/client';
 import AddressFields, { cleanAddress, emptyAddress } from '../components/AddressFields';
 import Button from '../components/Button';
 import Field from '../components/Field';
+import Logo from '../components/Logo';
 import { FormError } from '../components/State';
 import { formatCnpj, isValidCnpj, normalizarCnpj } from '../utils/cnpj';
 import { formatPhone } from '../utils/format';
@@ -89,6 +90,7 @@ export default function Register() {
 
   return (
     <section className="mx-auto max-w-3xl px-5 py-12">
+      <Logo variante="vertical" className="mb-4 h-24" />
       <h2 className="text-3xl font-extrabold">Criar conta</h2>
       <p className="mb-8 text-muted">Cadastro para lojistas. Já tem conta? <Link to="/entrar" className="font-extrabold text-brand">Entrar</Link></p>
       <form onSubmit={submit} noValidate className="rounded-3xl bg-white p-6">

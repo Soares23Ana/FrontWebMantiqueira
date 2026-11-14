@@ -130,7 +130,7 @@ function ProductList() {
             <tr key={p.id_produto} className={p.ativo ? '' : 'opacity-60'}>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <img src={imageUrl(p.imagem_url)} alt="" className="h-12 w-12 shrink-0 rounded-xl bg-surface object-contain" />
+                  <img src={imageUrl(p.imagem_url)} alt="" className="h-12 w-12 shrink-0 rounded-xl bg-surface object-contain foto-produto" />
                   <span className="max-w-64 font-medium">{p.nome}</span>
                 </div>
               </td>

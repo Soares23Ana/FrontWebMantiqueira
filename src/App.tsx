@@ -8,6 +8,7 @@ import WhatsAppButton from './components/WhatsAppButton';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { StoreProvider } from './context/StoreContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import Account from './pages/account/Account';
 import Brand from './pages/Brand';
@@ -69,13 +70,14 @@ const router = createBrowserRouter([
       { path: '/categoria/:slug', element: <Catalog /> },
       { path: '/marca/:slug', element: <Brand /> },
       { path: '/produto/:id', element: <ProductDetail /> },
-      { path: '/favoritos', element: <Favorites /> },
-      { path: '/carrinho', element: <Cart /> },
       { path: '/entrar', element: <Login /> },
       { path: '/cadastro', element: <Register /> },
       {
+        // Favoritos, carrinho e checkout exigem login: sem entrar, a pessoa vai para /entrar e volta depois.
         element: <RequireRole role="cliente" />,
         children: [
+          { path: '/favoritos', element: <Favorites /> },
+          { path: '/carrinho', element: <Cart /> },
           { path: '/checkout', element: <Checkout /> },
           { path: '/minha-conta/*', element: <Account /> },
         ],
@@ -92,14 +94,16 @@ const router = createBrowserRouter([
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <StoreProvider>
-          <CartProvider>
-            <RouterProvider router={router} />
-          </CartProvider>
-        </StoreProvider>
-      </AuthProvider>
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <StoreProvider>
+            <CartProvider>
+              <RouterProvider router={router} />
+            </CartProvider>
+          </StoreProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

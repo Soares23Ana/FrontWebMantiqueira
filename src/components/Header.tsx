@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import Icon from './Icon';
+import Logo from './Logo';
+import ThemeToggle from './ThemeToggle';
 import SearchAutocomplete from './SearchAutocomplete';
 
 interface IconLinkProps {
@@ -10,11 +12,13 @@ interface IconLinkProps {
   icon: 'user' | 'heart' | 'cart';
   badge?: number;
   to: string;
+  /** Endereço de volta depois do login, quando o link exige estar logado. */
+  voltarPara?: string;
 }
 
-function IconLink({ label, icon, badge = 0, to }: IconLinkProps) {
+function IconLink({ label, icon, badge = 0, to, voltarPara }: IconLinkProps) {
   return (
-    <NavLink to={to} aria-label={label} title={label}
+    <NavLink to={to} aria-label={label} title={label} state={voltarPara ? { from: voltarPara } : undefined}
       className={({ isActive }) => `relative grid h-11 w-11 place-items-center rounded-full transition hover:bg-surface ${isActive ? 'text-accent' : ''}`}>
       <Icon name={icon} />
       {badge > 0 && (
@@ -39,7 +43,7 @@ export default function Header() {
       )}
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-5 py-2">
         <Link to="/" aria-label="Ir para a página inicial">
-          <img src="/logo-mantiqueira.svg" alt="Mantiqueira Distribuidora" className="h-12 w-auto md:h-14" />
+          <Logo className="h-12 md:h-14" />
         </Link>
         <SearchAutocomplete className="order-last w-full md:order-none md:w-auto md:flex-1" />
         <div className="ml-auto flex items-center">
@@ -50,8 +54,10 @@ export default function Header() {
             </Link>
           )}
           <IconLink label={user ? `Minha conta (${user.nome})` : 'Entrar'} icon="user" to={user?.tipo === 'cliente' ? '/minha-conta' : '/entrar'} />
-          <IconLink label="Favoritos" icon="heart" badge={favIds.length} to="/favoritos" />
-          <IconLink label="Carrinho" icon="cart" badge={count} to="/carrinho" />
+          {/* Sem login, favoritos e carrinho levam à tela de entrar (e voltam para cá depois). */}
+          <IconLink label="Favoritos" icon="heart" badge={favIds.length} to={user ? '/favoritos' : '/entrar'} voltarPara={user ? undefined : '/favoritos'} />
+          <IconLink label="Carrinho" icon="cart" badge={count} to={user ? '/carrinho' : '/entrar'} voltarPara={user ? undefined : '/carrinho'} />
+          <ThemeToggle />
         </div>
       </div>
       {categorias.length > 0 && (

@@ -144,7 +144,7 @@ function CampaignModal({ campanha, onClose, onSaved }: { campanha: Campanha | nu
         <div className="mb-3 flex flex-wrap gap-2">
           {produtos.map((p) => (
             <span key={p.id_produto} className="inline-flex items-center gap-2 rounded-full bg-brand/10 py-1 pl-1 pr-2 text-sm text-brand">
-              <img src={imageUrl(p.imagem_url)} alt="" className="h-6 w-6 rounded-full bg-white object-contain" />
+              <img src={imageUrl(p.imagem_url)} alt="" className="h-6 w-6 rounded-full bg-white object-contain foto-produto" />
               <span className="max-w-48 truncate">{p.nome}</span>
               <button type="button" onClick={() => toggle(p)} aria-label={`Remover ${p.nome}`}><Icon name="close" className="h-4 w-4" /></button>
             </span>
@@ -160,7 +160,7 @@ function CampaignModal({ campanha, onClose, onSaved }: { campanha: Campanha | nu
               return (
                 <li key={p.id_produto}>
                   <button type="button" onClick={() => toggle(p)} className={`flex w-full items-center gap-3 rounded-xl p-2 text-left text-sm ${on ? 'bg-brand/10' : 'hover:bg-surface'}`}>
-                    <img src={imageUrl(p.imagem_url)} alt="" className="h-9 w-9 rounded-lg object-contain" />
+                    <img src={imageUrl(p.imagem_url)} alt="" className="h-9 w-9 rounded-lg object-contain foto-produto" />
                     <span className="flex-1">{p.nome}<span className="block text-xs text-muted">{p.sku}</span></span>
                     <Icon name={on ? 'check' : 'plus'} className="h-5 w-5 text-brand" />
                   </button>

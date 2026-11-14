@@ -4,6 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mantiqueira Distribuidora</title>
+    <meta name="description" content="Plataforma de pedidos para lojistas da Mantiqueira Distribuidora: higiene e beleza, farmácia, bebê, papelaria e utilidades." />
+    <meta name="theme-color" content="#3b3b98" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <meta property="og:title" content="Mantiqueira Distribuidora" />
+    <meta property="og:description" content="Faça seus pedidos online: higiene e beleza, farmácia, bebê, papelaria e utilidades." />
+    <meta property="og:image" content="/logo-compartilhar.jpg" />
+    <meta property="og:type" content="website" />
+    <script>
+      // Aplica o tema salvo (ou o do sistema) antes de a página aparecer, para não piscar claro no modo noturno.
+      try {
+        var salvo = localStorage.getItem('mantiqueira.tema');
+        var escuro = salvo ? salvo === 'escuro' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (escuro) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;800&display=swap" rel="stylesheet" />
   </head>
   <body>

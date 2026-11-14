@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, ScrollRestoration, useLocation, useNavigate, useOutletContext } from 'react-router-dom';
 import { api } from '../../api/client';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import Logo from '../../components/Logo';
+import ThemeToggle from '../../components/ThemeToggle';
 import ManagerSidebar from '../../components/manager/ManagerSidebar';
 import type { SidebarItem } from '../../components/manager/ManagerSidebar';
 import { useAuth } from '../../context/AuthContext';
@@ -67,10 +69,11 @@ export default function ManagerLayout() {
     <div className="min-h-screen bg-surface font-sans text-ink">
       <header className="sticky top-0 z-20 border-b border-black/10 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-2">
-          <Link to="/gestor" aria-label="Painel do gestor"><img src="/logo-mantiqueira.svg" alt="Mantiqueira" className="h-11 w-auto" /></Link>
+          <Link to="/gestor" aria-label="Painel do gestor"><Logo className="h-11" /></Link>
           <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-brand">Gestor</span>
           <div className="ml-auto flex items-center gap-2 text-sm">
             <span className="hidden text-muted sm:inline">{user?.nome}</span>
+            <ThemeToggle />
             <Link to="/" className="rounded-full px-4 py-2 font-extrabold text-brand hover:bg-surface">Ver loja</Link>
             <button onClick={() => { logout(); navigate('/entrar'); }} className="rounded-full px-4 py-2 font-extrabold text-accent hover:bg-accent/5">Sair</button>
           </div>

@@ -27,7 +27,8 @@ Site de pedidos B2B da **Mantiqueira Distribuidora**, feito como Projeto Integra
 - **Home dirigida pelo painel de conteúdo:** banners com destino (produto, categoria, marca, campanha ou link), pop-up, campanhas ativas com selo, destaques, aviso do topo e botão de WhatsApp.
 - **Catálogo:** busca sem acento com sugestões enquanto digita, filtros por categoria e subcategoria (2 níveis), marca, campanha e disponibilidade, ordenação e paginação. O estado fica no endereço da página, então o botão voltar do navegador funciona e o link pode ser compartilhado.
 - **Produto:** foto com zoom, descrição, destaques e quantidade que respeita a embalagem de venda (múltiplo de venda).
-- **Carrinho e favoritos:** para o cliente logado ficam salvos na conta (valem em qualquer computador); para o visitante ficam no navegador e são somados à conta quando ele entra. Mostram a faixa de estoque e avisam de produto indisponível.
+- **Carrinho e favoritos:** só para cliente logado. Quem não entrou é levado para a tela de login ao tocar no coração, em "Adicionar ao carrinho" ou nos ícones de favoritos e carrinho, e volta para a página em que estava. Ficam salvos na conta (valem em qualquer computador) e mostram a faixa de estoque.
+- **Modo noturno:** botão de sol e lua no cabeçalho da loja e do gestor. Sem escolha salva, segue o tema do sistema; a escolha fica guardada no navegador.
 - **Cadastro e entrada:** login único por CNPJ ou e-mail. No cadastro, mostra o nome da empresa na Receita ao completar o CNPJ e preenche o endereço ao completar o CEP.
 - **Checkout:** escolha de endereço, data desejada e observação. Se algum item tiver problema, mostra todos de uma vez, com campo para escolher outra quantidade ou remover o item (a API não informa o estoque exato).
 - **Minha conta:** pedidos com linha do tempo e histórico, "Repetir pedido", cancelamento com motivo, perfil, endereços e troca de senha.
@@ -186,7 +187,7 @@ public/img/                fotos dos produtos de exemplo e logotipo
 ## Limitações conhecidas
 
 - O **texto das páginas de marca** (`src/data/brands.ts`) e os **textos de divulgação da página inicial** (como "frete grátis" e "pedido mínimo") ficam no código. Os de divulgação foram herdados do site original e precisam ser confirmados com a empresa.
-- Quem **não está logado** tem o carrinho e os favoritos só no navegador; eles passam para a conta quando a pessoa entra.
+- Carrinho e favoritos exigem login: não existe mais carrinho nem lista de favoritos de visitante.
 - O front **não tem testes automáticos**. Foi conferido à mão contra a API, e o `npm run build` termina sem erros. Ainda falta testar no celular, em outros navegadores e o envio de planilha e de fotos pela tela.
 - Não há envio de e-mails nem recuperação de senha sozinha: quem esquece a senha chama a empresa pelo WhatsApp, e a equipe define uma senha temporária.
 - As **fotos enviadas** pela equipe ficam no servidor da API. A ideia futura é guardá-las na nuvem.

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Modo noturno: a classe "dark" fica no <html> (botão do cabeçalho; ver context/ThemeContext.tsx). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-brand: #3b3b98;
   --color-brand-dark: #2b3990;
@@ -34,3 +37,38 @@ html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) {
   .heart-pop, .heart-ring, .heart-particle { animation: none; }
 }
+
+/* ---------- Modo noturno ----------
+   As cores principais vêm de variáveis; os poucos fundos fixos (branco, cinza e as bordas translúcidas)
+   são trocados aqui para a loja e o gestor ficarem legíveis sem mexer em cada tela. */
+.dark {
+  color-scheme: dark;
+  --color-surface: #0f111a;
+  --color-ink: #e9ebf5;
+  --color-muted: #a4abc2;
+}
+.dark body { background: #0f111a; }
+.dark .bg-white { background-color: #1a1d2b; }
+.dark .hover\:bg-white:hover { background-color: #242839; }
+.dark .focus\:bg-white:focus { background-color: #242839; }
+.dark .bg-white\/80 { background-color: rgb(26 29 43 / 0.85); }
+.dark .border-black\/10, .dark .divide-black\/10 > :not(:last-child), .dark .ring-black\/10 { border-color: rgb(255 255 255 / 0.12); --tw-ring-color: rgb(255 255 255 / 0.12); }
+.dark .bg-black\/10, .dark .hover\:bg-black\/10:hover { background-color: rgb(255 255 255 / 0.1); }
+.dark .hover\:bg-black\/5:hover { background-color: rgb(255 255 255 / 0.06); }
+/* Textos em azul e vermelho de marca ficam mais claros para ter contraste sobre o fundo escuro. */
+.dark .text-brand, .dark .hover\:text-brand:hover, .dark .text-brand-dark { color: #a5b0ff; }
+.dark .text-accent, .dark .hover\:text-accent:hover { color: #ff7681; }
+.dark .focus\:border-brand:focus, .dark .hover\:border-brand:hover { border-color: #a5b0ff; }
+.dark .bg-brand\/10 { background-color: rgb(165 176 255 / 0.14); }
+.dark .bg-accent\/10, .dark .bg-accent\/5 { background-color: rgb(255 118 129 / 0.12); }
+/* Botões que invertem a cor ao passar o mouse (borda e texto em "ink"). */
+.dark .hover\:bg-ink:hover { background-color: var(--color-ink); color: #0f111a; }
+/* Selos e avisos coloridos. */
+.dark .bg-green-100, .dark .bg-green-50 { background-color: rgb(34 197 94 / 0.16); }
+.dark .text-green-800, .dark .text-green-700 { color: #86efac; }
+.dark .bg-amber-100, .dark .bg-amber-50 { background-color: rgb(245 158 11 / 0.16); }
+.dark .text-amber-800, .dark .text-amber-700 { color: #fcd34d; }
+/* Fotos de produto têm fundo branco: ficam em um quadro claro, para não parecerem recortadas no escuro. */
+.dark .foto-produto { background-color: #fff; border-radius: 0.75rem; }
+/* Logos com fundo claro ganham um quadro branco no modo noturno. */
+.dark .logo-quadro { background-color: #fff; border-radius: 0.75rem; padding: 0.25rem 0.5rem; }
