@@ -70,5 +70,9 @@ html { scroll-behavior: smooth; }
 .dark .text-amber-800, .dark .text-amber-700 { color: #fcd34d; }
 /* Fotos de produto têm fundo branco: ficam em um quadro claro, para não parecerem recortadas no escuro. */
 .dark .foto-produto { background-color: #fff; border-radius: 0.75rem; }
-/* Logos com fundo claro ganham um quadro branco no modo noturno. */
-.dark .logo-quadro { background-color: #fff; border-radius: 0.75rem; padding: 0.25rem 0.5rem; }
+
+/* Fotos de produto e de marca (têm fundo branco) com os cantos arredondados em toda a loja e no gestor.
+   Fica na camada base para as classes do Tailwind (como rounded-full nas miniaturas) continuarem mandando. */
+@layer base {
+  img[src^="/img/"], img[src*="/arquivos/"] { border-radius: 0.75rem; }
+}
