@@ -47,6 +47,8 @@ interface Saude {
   versao: string;
   banco: { status: string; latencia_ms: number; migracoes_pendentes: string[] };
   processo: { iniciado_em: string; uptime_segundos: number; node: string; memoria_mb: number };
+  /** Pasta das fotos enviadas. Opcional: um back antigo não manda este campo. */
+  uploads?: { gravavel: boolean; arquivos: number };
   jobs: Job[];
   sincronizacoes: Partial<Record<'ultima' | 'ultima_catalogo' | 'ultima_carga_completa' | 'ultima_estoque' | 'ultima_importacao_manual', Sincronizacao | null>>;
 }
@@ -109,6 +111,23 @@ export default function SystemHealth() {
               </ul>
             </div>
           </div>
+          {data.uploads && (
+            <div className={`${card} mt-6`}>
+              <h3 className="mb-3 font-extrabold">Fotos enviadas</h3>
+              <dl className="grid grid-cols-2 gap-2 text-sm">
+                <div className="rounded-xl bg-surface p-3">
+                  <dt className="text-muted">Pasta de fotos</dt>
+                  <dd className={`font-extrabold ${data.uploads.gravavel ? '' : 'text-accent'}`}>{data.uploads.gravavel ? 'gravável' : 'sem permissão de gravação'}</dd>
+                </div>
+                <div className="rounded-xl bg-surface p-3"><dt className="text-muted">Arquivos</dt><dd className="font-extrabold">{data.uploads.arquivos}</dd></div>
+              </dl>
+              {!data.uploads.gravavel && (
+                <p role="alert" className="mt-3 rounded-xl bg-accent/10 p-3 text-sm font-medium text-accent">
+                  A pasta de fotos não está gravável: novas fotos não serão salvas. Avise a equipe da nuvem.
+                </p>
+              )}
+            </div>
+          )}
           <div className={`${card} mt-6`}>
             <h3 className="mb-3 font-extrabold">Jobs automáticos</h3>
             <div className="overflow-x-auto">

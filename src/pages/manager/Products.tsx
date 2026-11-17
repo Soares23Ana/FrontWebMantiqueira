@@ -14,6 +14,7 @@ import SearchBox from '../../components/manager/SearchBox';
 import SectionHeader from '../../components/manager/SectionHeader';
 import TableCard from '../../components/manager/TableCard';
 import Toggle from '../../components/manager/Toggle';
+import BulkPhotosModal from './BulkPhotosModal';
 import { ErrorState, FormError, Loading } from '../../components/State';
 import { useToast } from '../../context/ToastContext';
 import { useApi, useDebounced } from '../../hooks/useApi';
@@ -63,6 +64,7 @@ function ProductList() {
 
   const [editing, setEditing] = useState<Produto | 'novo' | null>(null);
   const [stockOf, setStockOf] = useState<Produto | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const resetPage = () => setPage(1);
   const changed = () => {
@@ -95,6 +97,7 @@ function ProductList() {
     <>
       <div className="mb-4 flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={exportCsv}><Icon name="download" className="mr-1 inline h-5 w-5 align-text-bottom" />Exportar</Button>
+        <Button variant="ghost" onClick={() => setBulkOpen(true)}><Icon name="upload" className="mr-1 inline h-5 w-5 align-text-bottom" />Fotos em lote</Button>
         <Button variant="accent" onClick={() => setEditing('novo')}><Icon name="plus" className="mr-1 inline h-5 w-5 align-text-bottom" />Novo produto</Button>
       </div>
       <div className="mb-4 grid gap-3">
@@ -157,6 +160,7 @@ function ProductList() {
         <ProductFormModal product={editing === 'novo' ? null : editing} categorias={categorias.data?.categorias ?? []} marcas={marcas.data?.marcas ?? []}
           onClose={() => setEditing(null)} onSaved={() => { setEditing(null); changed(); }} />
       )}
+      {bulkOpen && <BulkPhotosModal onClose={() => setBulkOpen(false)} onDone={changed} />}
       {stockOf && <StockModal product={stockOf} onClose={() => setStockOf(null)} onSaved={changed} />}
     </>
   );
@@ -180,6 +184,7 @@ function ProductFormModal({ product, categorias, marcas, onClose, onSaved }: {
     quantidade_estoque: '0',
   });
   const [file, setFile] = useState<File | null>(null);
+  const [link, setLink] = useState('');
   const [preview, setPreview] = useState(imageUrl(product?.imagem_url));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
@@ -191,13 +196,25 @@ function ProductFormModal({ product, categorias, marcas, onClose, onSaved }: {
     if (!f) return;
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(f.type)) return setErrors({ ...errors, imagem: 'Use JPEG, PNG, WEBP ou GIF.' });
     if (f.size > 5 * 1024 * 1024) return setErrors({ ...errors, imagem: 'A imagem deve ter até 5 MB.' });
-    setErrors({ ...errors, imagem: '' });
+    setErrors({ ...errors, imagem: '', imagem_link: '' });
     setFile(f);
+    setLink(''); // vale só um: o arquivo ou o link
     setPreview(URL.createObjectURL(f));
+  };
+
+  const onLink = (e: ChangeEvent<HTMLInputElement>) => {
+    setLink(e.target.value);
+    setErrors({ ...errors, imagem_link: '' });
+    if (e.target.value && file) { setFile(null); setPreview(imageUrl(product?.imagem_url)); }
   };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    const linkLimpo = link.trim();
+    if (linkLimpo && !/^https?:\/\//i.test(linkLimpo)) {
+      setErrors({ imagem_link: 'O endereço deve começar com http:// ou https://.' });
+      return;
+    }
     setSaving(true);
     setErrors({});
     setFormError('');
@@ -212,24 +229,40 @@ function ProductFormModal({ product, categorias, marcas, onClose, onSaved }: {
       multiplo_venda: Number(form.multiplo_venda),
       ativo: form.ativo,
     };
+    let id = product?.id_produto;
     try {
-      let id = product?.id_produto;
       if (product) {
         await api.patch(`/produtos/${id}`, body);
       } else {
         const r = await api.post<{ id_produto: number }>('/produtos', { ...body, quantidade_estoque: Number(form.quantidade_estoque) || 0 });
         id = r.id_produto;
       }
+    } catch (err) {
+      if (err instanceof ApiError) setErrors(err.fieldErrors);
+      setFormError(errorMessage(err));
+      setSaving(false);
+      return;
+    }
+    // O produto já foi gravado. Se a foto falhar num produto NOVO, não dá para deixar o modal aberto:
+    // um segundo "Salvar" tentaria criar o produto de novo e daria erro de SKU duplicado.
+    try {
       if (file && id) {
         const fd = new FormData();
         fd.append('imagem', file);
         await api.post(`/produtos/${id}/imagem`, fd);
+      } else if (linkLimpo && id) {
+        await api.post(`/produtos/${id}/imagem/link`, { url: linkLimpo });
       }
       toast(product ? 'Produto atualizado.' : 'Produto cadastrado.');
       onSaved();
     } catch (err) {
-      if (err instanceof ApiError) setErrors(err.fieldErrors);
-      setFormError(errorMessage(err));
+      if (!product) {
+        toast(`Produto cadastrado, mas a imagem não foi enviada: ${errorMessage(err)} Você pode tentar de novo editando o produto.`, 'error');
+        onSaved();
+      } else {
+        setErrors({ imagem_link: linkLimpo ? errorMessage(err) : '', imagem: linkLimpo ? '' : errorMessage(err) });
+        setFormError('Os dados foram salvos, mas a imagem não foi enviada.');
+      }
     } finally {
       setSaving(false);
     }
@@ -246,7 +279,15 @@ function ProductFormModal({ product, categorias, marcas, onClose, onSaved }: {
               Trocar imagem
               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={onFile} />
             </label>
-            {errors.imagem && <small className="text-accent">{errors.imagem}</small>}
+            {errors.imagem && <small className="block text-accent">{errors.imagem}</small>}
+            <label className="mt-3 block text-sm">
+              <span className="text-muted">Ou cole o link da imagem</span>
+              <input type="url" inputMode="url" maxLength={2048} value={link} onChange={onLink} placeholder="https://..."
+                aria-invalid={Boolean(errors.imagem_link)}
+                className="mt-1 w-full rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" />
+              <small className="block text-muted">Endereço que comece com http:// ou https://</small>
+            </label>
+            {errors.imagem_link && <small role="alert" className="block text-accent">{errors.imagem_link}</small>}
           </div>
           <div>
             <div className="grid gap-x-4 sm:grid-cols-[140px_minmax(0,1fr)]">

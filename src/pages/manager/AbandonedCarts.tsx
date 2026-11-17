@@ -12,7 +12,7 @@ import TableCard from '../../components/manager/TableCard';
 import { ErrorState, FormError, Loading } from '../../components/State';
 import { useToast } from '../../context/ToastContext';
 import { useApi } from '../../hooks/useApi';
-import { formatDateTime, formatPhone, formatTempoParado } from '../../utils/format';
+import { formatDateTime, formatDias, formatPhone } from '../../utils/format';
 import type { Paginacao } from '../../types';
 import { useManager } from './ManagerLayout';
 
@@ -20,7 +20,6 @@ interface CarrinhoAbandonado {
   id_carrinho: number;
   cliente: { id_usuario: number; cnpj: string | null; nome_exibicao: string; telefone: string | null; email: string };
   ultimo_movimento_em: string;
-  minutos_parado: number;
   dias_parado: number;
   total_unidades: number;
   itens: { id_produto: number; sku: string; nome: string; quantidade: number }[];
@@ -43,7 +42,7 @@ export default function AbandonedCarts() {
   const [pageSize, setPageSize] = useState(10);
   const [contatando, setContatando] = useState<CarrinhoAbandonado | null>(null);
   const { data, loading, error, reload } = useApi(
-    () => api.get<{ minutos: number; carrinhos: CarrinhoAbandonado[]; paginacao: Paginacao }>('/carrinhos-abandonados',
+    () => api.get<{ dias: number; carrinhos: CarrinhoAbandonado[]; paginacao: Paginacao }>('/carrinhos-abandonados',
       { busca, contatado: contatadoValue[filtro], pagina: page, limite: pageSize }),
     [busca, filtro, page, pageSize],
   );
@@ -58,7 +57,7 @@ export default function AbandonedCarts() {
   return (
     <>
       <SectionHeader title="Carrinhos abandonados"
-        subtitle={`Clientes com itens no carrinho parados há ${formatTempoParado(data?.minutos ?? 30)} ou mais e sem pedido depois disso.`} />
+        subtitle={`Clientes com itens no carrinho parados há ${formatDias(data?.dias ?? 2)} ou mais e sem pedido depois disso.`} />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <SearchBox value={busca} onChange={(v) => { setBusca(v); setPage(1); }} placeholder="Buscar por nome, e-mail ou CNPJ" />
         <ChipFilter label="Contato" options={filtros} value={filtro} onChange={(v) => { setFiltro(v); setPage(1); }} />
@@ -80,7 +79,7 @@ export default function AbandonedCarts() {
                 <b>{c.total_unidades} unidade(s)</b>
                 <span className="block max-w-xs truncate text-muted">{c.itens.map((i) => `${i.quantidade}× ${i.nome}`).join(', ')}</span>
               </td>
-              <td className="px-4 text-sm">{formatTempoParado(c.minutos_parado)}<span className="block text-muted">{formatDateTime(c.ultimo_movimento_em)}</span></td>
+              <td className="px-4 text-sm">{formatDias(c.dias_parado)}<span className="block text-muted">{formatDateTime(c.ultimo_movimento_em)}</span></td>
               <td className="px-4 text-sm">
                 {c.contatado_em
                   ? <><span className="inline-block whitespace-nowrap rounded-full bg-green-100 px-3 py-1 font-medium text-green-800">Contatado</span>
