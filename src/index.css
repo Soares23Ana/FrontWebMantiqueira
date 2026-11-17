@@ -44,21 +44,21 @@ html { scroll-behavior: smooth; }
 .dark {
   color-scheme: dark;
   --color-surface: #0f111a;
-  --color-ink: #e9ebf5;
-  --color-muted: #a4abc2;
+  --color-ink: #f4f6fd;
+  --color-muted: #bcc2d8;
 }
 .dark body { background: #0f111a; }
 .dark .bg-white { background-color: #1a1d2b; }
 .dark .hover\:bg-white:hover { background-color: #242839; }
 .dark .focus\:bg-white:focus { background-color: #242839; }
-.dark .bg-white\/80 { background-color: rgb(26 29 43 / 0.85); }
-.dark .border-black\/10, .dark .divide-black\/10 > :not(:last-child), .dark .ring-black\/10 { border-color: rgb(255 255 255 / 0.12); --tw-ring-color: rgb(255 255 255 / 0.12); }
+.dark .bg-white\/80, .dark .bg-white\/85 { background-color: rgb(26 29 43 / 0.88); }
+.dark .border-black\/10, .dark .divide-black\/10 > :not(:last-child), .dark .ring-black\/10 { border-color: rgb(255 255 255 / 0.18); --tw-ring-color: rgb(255 255 255 / 0.18); }
 .dark .bg-black\/10, .dark .hover\:bg-black\/10:hover { background-color: rgb(255 255 255 / 0.1); }
 .dark .hover\:bg-black\/5:hover { background-color: rgb(255 255 255 / 0.06); }
 /* Textos em azul e vermelho de marca ficam mais claros para ter contraste sobre o fundo escuro. */
-.dark .text-brand, .dark .hover\:text-brand:hover, .dark .text-brand-dark { color: #a5b0ff; }
+.dark .text-brand, .dark .hover\:text-brand:hover, .dark .text-brand-dark { color: #b8c1ff; }
 .dark .text-accent, .dark .hover\:text-accent:hover { color: #ff7681; }
-.dark .focus\:border-brand:focus, .dark .hover\:border-brand:hover { border-color: #a5b0ff; }
+.dark .focus\:border-brand:focus, .dark .hover\:border-brand:hover { border-color: #b8c1ff; }
 .dark .bg-brand\/10 { background-color: rgb(165 176 255 / 0.14); }
 .dark .bg-accent\/10, .dark .bg-accent\/5 { background-color: rgb(255 118 129 / 0.12); }
 /* Botões que invertem a cor ao passar o mouse (borda e texto em "ink"). */

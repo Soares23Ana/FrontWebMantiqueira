@@ -9,6 +9,7 @@ import { ErrorState, Loading } from '../components/State';
 import { useAuth } from '../context/AuthContext';
 import { toMultiple, useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
+import { corNoTema, useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { useRequireLogin } from '../hooks/useRequireLogin';
 import { brands } from '../data/brands';
@@ -21,6 +22,7 @@ export default function ProductDetail() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { escuro } = useTheme();
   const { add, items, favIds, toggleFavorite } = useCart();
   const { selos } = useStore();
   const toast = useToast();
@@ -46,7 +48,7 @@ export default function ProductDetail() {
   if (detalhe.error || !product) return <ErrorState error={detalhe.error ?? 'Produto não encontrado.'} onRetry={detalhe.reload} className="py-32" />;
 
   const brand = brands.find((b) => b.id === marcaSlug);
-  const color = brand?.color ?? '#3b3b98';
+  const color = corNoTema(brand?.color ?? '#3b3b98', escuro);
   const tint = `color-mix(in srgb, ${color} 7%, white)`;
   const m = product.multiplo_venda;
   const unavailable = product.disponibilidade === 'indisponivel';

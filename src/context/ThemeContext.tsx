@@ -52,3 +52,8 @@ export function useTheme() {
   if (!ctx) throw new Error('useTheme fora do ThemeProvider');
   return ctx;
 }
+
+/** Cor de marca legível no tema atual: no modo noturno ela é misturada com branco, para ter contraste sobre o fundo escuro. */
+export function corNoTema(cor: string, escuro: boolean): string {
+  return escuro ? `color-mix(in oklab, ${cor} 42%, white)` : cor;
+}

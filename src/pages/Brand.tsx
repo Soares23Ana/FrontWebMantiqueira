@@ -6,6 +6,7 @@ import Reveal from '../components/Reveal';
 import { ErrorState, Loading } from '../components/State';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
+import { corNoTema, useTheme } from '../context/ThemeContext';
 import { brands } from '../data/brands';
 import { useApi } from '../hooks/useApi';
 import type { Paginacao, Produto } from '../types';
@@ -17,6 +18,7 @@ export default function Brand() {
   const { slug = '' } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { escuro } = useTheme();
   const { marcas } = useStore();
   const lista = useApi(
     () => api.get<{ produtos: Produto[]; paginacao: Paginacao }>('/produtos', { marca: slug, limite: 100 }),
@@ -32,7 +34,7 @@ export default function Brand() {
     return <NotFound title="Marca não encontrada" text="Confira o endereço ou veja todas as marcas na página inicial." />;
   }
 
-  const color = editorial?.color ?? '#3b3b98';
+  const color = corNoTema(editorial?.color ?? '#3b3b98', escuro);
   return (
     <div className="bg-white">
       <section className="mx-auto max-w-6xl px-5 pb-10 pt-10">
@@ -47,7 +49,7 @@ export default function Brand() {
       {editorial && (
         <section className="mx-auto max-w-6xl px-5 py-12">
           <Reveal>
-            <p className="max-w-4xl text-2xl font-light uppercase leading-snug tracking-wide md:text-4xl" style={{ color, opacity: 0.8 }}>
+            <p className="max-w-4xl text-2xl font-light uppercase leading-snug tracking-wide md:text-4xl" style={{ color, opacity: escuro ? 1 : 0.8 }}>
               {editorial.about ?? editorial.text}
             </p>
           </Reveal>
