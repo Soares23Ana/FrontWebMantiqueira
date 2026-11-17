@@ -53,7 +53,7 @@ export function useTheme() {
   return ctx;
 }
 
-const FUNDO_ESCURO = [26, 29, 43]; // o fundo dos cartões no modo noturno (#1a1d2b)
+const FUNDO_ESCURO = [20, 26, 63]; // o fundo dos cartões no modo noturno (#141a3f)
 const CONTRASTE_MINIMO = 3.5; // as cores de marca aparecem em títulos grandes; abaixo disso ficam difíceis de ler
 
 function luminancia([r, g, b]: number[]): number {

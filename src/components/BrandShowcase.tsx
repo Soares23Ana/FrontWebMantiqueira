@@ -28,7 +28,7 @@ export default function BrandShowcase({ products, color }: Props) {
   const tint = `color-mix(in srgb, ${color} 7%, white)`;
   // No modo noturno o fundo é escuro, com um toque da cor da marca, e a foto fica em um quadro branco (sem o efeito multiply).
   const fundo = escuro
-    ? `linear-gradient(135deg, color-mix(in srgb, ${color} 22%, #1a1d2b), #1a1d2b)`
+    ? `linear-gradient(135deg, color-mix(in srgb, ${color} 22%, #141a3f), #141a3f)`
     : `linear-gradient(135deg, ${tint}, white)`;
 
   return (
