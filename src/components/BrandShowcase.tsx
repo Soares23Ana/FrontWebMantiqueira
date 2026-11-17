@@ -34,12 +34,12 @@ export default function BrandShowcase({ products, color }: Props) {
   return (
     <div>
       <div style={{ background: fundo }}
-        className="relative grid min-h-[26rem] items-center gap-6 overflow-hidden rounded-sm p-6 md:grid-cols-2 md:p-12">
+        className="relative grid min-h-[26rem] items-center gap-6 overflow-hidden rounded-3xl p-6 md:grid-cols-2 md:p-12">
         <div className="absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed opacity-30"
           style={{ borderColor: color }} />
         <img key={p.id_produto} src={imageUrl(p.imagem_url)} alt={p.nome}
           className={`relative mx-auto max-h-80 w-full object-contain md:max-h-96 ${escuro ? 'rounded-2xl bg-[#fff] p-4' : 'mix-blend-multiply'}`} />
-        <div className="relative max-w-sm bg-white/80 p-6 shadow-sm backdrop-blur md:justify-self-start">
+        <div className="relative max-w-sm rounded-2xl bg-white/80 p-6 shadow-sm backdrop-blur md:justify-self-start">
           <p className="text-sm font-medium uppercase tracking-widest" style={{ color }}>Destaques</p>
           <h3 className="mt-2 text-lg font-medium leading-snug">{p.nome}</h3>
           {p.destaques && p.destaques.length > 0 && (
