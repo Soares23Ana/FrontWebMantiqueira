@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { imageUrl } from '../api/client';
 import { useCart } from '../context/CartContext';
+import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { useRequireLogin } from '../hooks/useRequireLogin';
 import Button from './Button';
@@ -19,20 +20,25 @@ export default function BrandShowcase({ products, color }: Props) {
   const { add } = useCart();
   const toast = useToast();
   const exigirLogin = useRequireLogin();
+  const { escuro } = useTheme();
   if (products.length === 0) return null;
   const i = Math.min(index, products.length - 1);
   const p = products[i];
   const go = (d: number) => setIndex((i + d + products.length) % products.length);
   const tint = `color-mix(in srgb, ${color} 7%, white)`;
+  // No modo noturno o fundo é escuro, com um toque da cor da marca, e a foto fica em um quadro branco (sem o efeito multiply).
+  const fundo = escuro
+    ? `linear-gradient(135deg, color-mix(in srgb, ${color} 22%, #1a1d2b), #1a1d2b)`
+    : `linear-gradient(135deg, ${tint}, white)`;
 
   return (
     <div>
-      <div style={{ background: `linear-gradient(135deg, ${tint}, white)` }}
+      <div style={{ background: fundo }}
         className="relative grid min-h-[26rem] items-center gap-6 overflow-hidden rounded-sm p-6 md:grid-cols-2 md:p-12">
         <div className="absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed opacity-30"
           style={{ borderColor: color }} />
         <img key={p.id_produto} src={imageUrl(p.imagem_url)} alt={p.nome}
-          className="relative mx-auto max-h-80 w-full object-contain mix-blend-multiply md:max-h-96" />
+          className={`relative mx-auto max-h-80 w-full object-contain md:max-h-96 ${escuro ? 'rounded-2xl bg-[#fff] p-4' : 'mix-blend-multiply'}`} />
         <div className="relative max-w-sm bg-white/80 p-6 shadow-sm backdrop-blur md:justify-self-start">
           <p className="text-sm font-medium uppercase tracking-widest" style={{ color }}>Destaques</p>
           <h3 className="mt-2 text-lg font-medium leading-snug">{p.nome}</h3>

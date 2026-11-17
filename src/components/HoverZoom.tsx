@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { MouseEvent } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import Icon from './Icon';
 
 interface Props {
@@ -13,6 +14,7 @@ export default function HoverZoom({ src, alt, className = '' }: Props) {
   const [hover, setHover] = useState(false);
   const [origin, setOrigin] = useState('50% 50%');
   const [open, setOpen] = useState(false);
+  const { escuro } = useTheme();
 
   useEffect(() => {
     if (!open) return;
@@ -34,7 +36,7 @@ export default function HoverZoom({ src, alt, className = '' }: Props) {
         className={`relative cursor-zoom-in overflow-hidden ${className}`}>
         <img src={src} alt={alt} draggable={false}
           style={{ transformOrigin: origin, transform: hover ? 'scale(2.2)' : 'scale(1)' }}
-          className="h-full max-h-[28rem] w-full select-none object-contain mix-blend-multiply transition-transform duration-200 ease-out" />
+          className={`h-full max-h-[28rem] w-full select-none object-contain transition-transform duration-200 ease-out ${escuro ? 'rounded-2xl bg-[#fff] p-4' : 'mix-blend-multiply'}`} />
         <span className={`pointer-events-none absolute bottom-3 right-3 text-ink/60 transition-opacity ${hover ? 'opacity-0' : 'opacity-100'}`}>
           <Icon name="plus" />
         </span>

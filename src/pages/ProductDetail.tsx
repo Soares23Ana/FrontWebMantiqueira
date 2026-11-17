@@ -50,6 +50,10 @@ export default function ProductDetail() {
   const brand = brands.find((b) => b.id === marcaSlug);
   const color = corNoTema(brand?.color ?? '#3b3b98', escuro);
   const tint = `color-mix(in srgb, ${color} 7%, white)`;
+  // No modo noturno o painel da foto é escuro, com um toque da cor da marca.
+  const fundo = escuro
+    ? `linear-gradient(135deg, color-mix(in srgb, ${color} 22%, #1a1d2b), #1a1d2b)`
+    : `linear-gradient(135deg, ${tint}, white)`;
   const m = product.multiplo_venda;
   const unavailable = product.disponibilidade === 'indisponivel';
   const inCart = items.find((i) => i.id_produto === product.id_produto)?.quantidade ?? 0;
@@ -67,7 +71,7 @@ export default function ProductDetail() {
         <button onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/produtos'))}
           className="text-xs font-medium uppercase tracking-widest underline underline-offset-4">← Voltar</button>
         <div className="mt-10 grid gap-12 md:grid-cols-2">
-          <div style={{ background: `linear-gradient(135deg, ${tint}, white)` }} className="relative grid min-h-[24rem] place-items-center p-8">
+          <div style={{ background: fundo }} className="relative grid min-h-[24rem] place-items-center p-8">
             <HoverZoom src={imageUrl(product.imagem_url)} alt={product.nome} className="w-full" />
             {tags.length > 0 && (
               <div className="absolute left-4 top-4 flex flex-col items-start gap-1">
