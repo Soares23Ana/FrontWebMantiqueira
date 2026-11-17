@@ -44,7 +44,7 @@ const SITUACAO: Record<SituacaoBanner, [string, string]> = {
 
 function Banners() {
   const toast = useToast();
-  const { data, loading, error, reload, setData } = useApi(() => api.get<{ banners: Banner[] }>('/cms/todos'), []);
+  const { data, loading, loaded, error, reload, setData } = useApi(() => api.get<{ banners: Banner[] }>('/cms/todos'), []);
   const [editing, setEditing] = useState<Banner | 'novo' | null>(null);
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const banners = data?.banners ?? [];
@@ -61,11 +61,14 @@ function Banners() {
   };
 
   const toggle = async (b: Banner, ativo: boolean) => {
+    // o botão desliza na hora; se o servidor recusar, a lista é recarregada e ele volta
+    setData((prev) => prev && { banners: prev.banners.map((x) => (x.id_banner === b.id_banner ? { ...x, ativo } : x)) });
     try {
       await api.patch(`/cms/${b.id_banner}`, { ativo });
       reload();
     } catch (e) {
       toast(errorMessage(e), 'error');
+      reload();
     }
   };
 
@@ -89,7 +92,7 @@ function Banners() {
         </div>
         <Button variant="accent" onClick={() => setEditing('novo')}><Icon name="plus" className="mr-1 inline h-5 w-5 align-text-bottom" />Adicionar banner</Button>
       </div>
-      {loading && <Loading className="py-6" />}
+      {loading && !loaded && <Loading className="py-6" />}
       {error && <ErrorState error={error} onRetry={reload} className="py-6" />}
       {data && banners.length === 0 && <p className="py-6 text-center text-muted">Nenhum banner cadastrado.</p>}
       <ul className="grid gap-3">
@@ -221,7 +224,7 @@ interface PopupBloco {
 // Pop-up da página inicial (bloco "popup"): título, texto, imagem, destino do botão e janela de exibição.
 function PopupTab() {
   const toast = useToast();
-  const { data, loading, error, reload } = useApi(async () => {
+  const { data, loading, loaded, error, reload } = useApi(async () => {
     const d = await api.get<{ blocos: (PopupBloco & { chave: string })[] }>('/cms/blocos');
     return d.blocos.find((b) => b.chave === 'popup') ?? null;
   }, []);
@@ -323,9 +326,9 @@ function PopupTab() {
           </div>
         )}
       </div>
-      {loading && <Loading className="py-6" />}
+      {loading && !loaded && <Loading className="py-6" />}
       {error && <ErrorState error={error} onRetry={reload} className="py-6" />}
-      {!loading && !error && (
+      {(!loading || loaded) && !error && (
         <form onSubmit={submit} noValidate className="max-w-xl">
           <FormError message={formError} />
           <Field label="Título" maxLength={150} value={titulo} onChange={(e) => setTitulo(e.target.value)} error={errors.titulo} />
@@ -356,7 +359,7 @@ function PopupTab() {
 function Blocks() {
   const toast = useToast();
   // O pop-up é um bloco de chave reservada ("popup"): ele tem aba própria.
-  const { data, loading, error, reload } = useApi(async () => {
+  const { data, loading, loaded, error, reload, setData } = useApi(async () => {
     const d = await api.get<{ blocos: BlocoCms[] }>('/cms/blocos');
     return { blocos: d.blocos.filter((b) => b.chave !== 'popup') };
   }, []);
@@ -374,12 +377,14 @@ function Blocks() {
   };
 
   const toggle = async (b: BlocoCms, ativo: boolean) => {
+    setData((prev) => prev && { blocos: prev.blocos.map((x) => (x.chave === b.chave ? { ...x, ativo } : x)) });
     try {
       const r = await api.patch<{ mensagem: string }>(`/cms/blocos/${b.chave}`, { ativo });
       toast(r.mensagem);
       reload();
     } catch (e) {
       toast(errorMessage(e), 'error');
+      reload();
     }
   };
 
@@ -392,7 +397,7 @@ function Blocks() {
         </div>
         <Button variant="accent" onClick={() => setEditing('novo')}><Icon name="plus" className="mr-1 inline h-5 w-5 align-text-bottom" />Novo bloco</Button>
       </div>
-      {loading && <Loading className="py-6" />}
+      {loading && !loaded && <Loading className="py-6" />}
       {error && <ErrorState error={error} onRetry={reload} className="py-6" />}
       {data?.blocos.length === 0 && <p className="py-6 text-center text-muted">Nenhum bloco cadastrado.</p>}
       <ul className="grid gap-3">

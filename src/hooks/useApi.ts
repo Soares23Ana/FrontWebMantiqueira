@@ -5,12 +5,13 @@ interface State<T> {
   data: T | null;
   loading: boolean;
   error: ApiError | null;
+  loaded: boolean; // já recebeu dados ao menos uma vez (recarregar depois não deve piscar a tela de "Carregando")
 }
 
 // Executa uma chamada à API quando as dependências mudam e devolve { data, loading, error, reload }.
 // Respostas antigas são descartadas se outra chamada começar antes (ex.: digitação rápida na busca).
 export function useApi<T>(fn: () => Promise<T>, deps: unknown[], enabled = true) {
-  const [state, setState] = useState<State<T>>({ data: null, loading: enabled, error: null });
+  const [state, setState] = useState<State<T>>({ data: null, loading: enabled, error: null, loaded: false });
   const callId = useRef(0);
   const [tick, setTick] = useState(0);
 
@@ -22,7 +23,7 @@ export function useApi<T>(fn: () => Promise<T>, deps: unknown[], enabled = true)
     const id = ++callId.current;
     setState((s) => ({ ...s, loading: true, error: null }));
     fn()
-      .then((data) => id === callId.current && setState({ data, loading: false, error: null }))
+      .then((data) => id === callId.current && setState({ data, loading: false, error: null, loaded: true }))
       .catch((e) => {
         if (id !== callId.current) return;
         const error = e instanceof ApiError ? e : new ApiError(0, 'Algo deu errado. Tente novamente.', 'ERRO');
