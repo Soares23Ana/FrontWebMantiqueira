@@ -53,7 +53,35 @@ export function useTheme() {
   return ctx;
 }
 
-/** Cor de marca legível no tema atual: no modo noturno ela é misturada com branco, para ter contraste sobre o fundo escuro. */
+const FUNDO_ESCURO = [26, 29, 43]; // o fundo dos cartões no modo noturno (#1a1d2b)
+const CONTRASTE_MINIMO = 3.5; // as cores de marca aparecem em títulos grandes; abaixo disso ficam difíceis de ler
+
+function luminancia([r, g, b]: number[]): number {
+  const f = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
+function contraste(a: number[], b: number[]): number {
+  const [maior, menor] = [luminancia(a), luminancia(b)].sort((x, y) => y - x);
+  return (maior + 0.05) / (menor + 0.05);
+}
+
+/**
+ * Cor de marca legível no tema atual. No modo noturno a cor é mantida exatamente como é quando já tem contraste
+ * suficiente sobre o fundo escuro (como o laranja do BIC); só as cores muito escuras (como o azul da Baruel) são
+ * misturadas com branco, o mínimo necessário para chegar ao contraste.
+ */
 export function corNoTema(cor: string, escuro: boolean): string {
-  return escuro ? `color-mix(in oklab, ${cor} 42%, white)` : cor;
+  if (!escuro) return cor;
+  const m = /^#([0-9a-f]{6})$/i.exec(cor);
+  if (!m) return `color-mix(in oklab, ${cor} 42%, white)`;
+  const rgb = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+  for (let t = 0; t <= 1.0001; t += 0.04) {
+    const mix = rgb.map((v) => Math.round(v + (255 - v) * t));
+    if (contraste(mix, FUNDO_ESCURO) >= CONTRASTE_MINIMO) return `rgb(${mix.join(',')})`;
+  }
+  return '#ffffff';
 }
