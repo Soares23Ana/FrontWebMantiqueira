@@ -8,8 +8,9 @@ const TONS: Record<string, string> = { 'bg-brand-dark': 'painel-azul-escuro', 'b
 
 // Cada painel sobe e cobre o anterior (position: sticky).
 export default function BrandPanels() {
+  // O fundo é o mesmo azul da faixa de cima (ZoomBanner): assim os cantos arredondados do primeiro painel encaixam sem mostrar outra cor.
   return (
-    <section className="relative z-10">
+    <section className="relative z-10 bg-brand-dark">
       {brands.map((p, i) => (
         <article key={p.name} style={{ zIndex: i + 1 }}
           className={`sticky top-0 grid min-h-[100svh] items-center rounded-t-[2rem] px-5 py-24 text-white ${p.bg} ${TONS[p.bg] ?? ''}`}>

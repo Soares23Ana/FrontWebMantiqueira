@@ -241,7 +241,7 @@ function ProductFormModal({ product, categorias, marcas, onClose, onSaved }: {
         <FormError message={formError} />
         <div className="grid gap-x-4 sm:grid-cols-[160px_minmax(0,1fr)]">
           <div className="mt-3">
-            <img src={preview} alt="" className="h-36 w-full rounded-xl bg-surface object-contain" />
+            <img src={preview} alt="" className="foto-produto h-36 w-full rounded-xl bg-surface object-contain p-2" />
             <label className="mt-2 block cursor-pointer rounded-full bg-surface px-3 py-2 text-center text-sm font-medium hover:bg-black/10">
               Trocar imagem
               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={onFile} />

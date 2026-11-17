@@ -1,7 +1,7 @@
 import { api } from '../../api/client';
+import OrdersChart from '../../components/manager/OrdersChart';
 import { ErrorState, Loading } from '../../components/State';
 import { useApi } from '../../hooks/useApi';
-import { formatDateOnly } from '../../utils/format';
 
 interface Funil {
   etapas: { etapa: string; sessoes: number; taxa_da_anterior: number | null }[];
@@ -48,8 +48,6 @@ export default function MetricsExtra({ de, ate }: { de: string; ate: string }) {
   const cliques = useApi(() => api.get<Cliques>('/metricas/banners-campanhas', periodo), [de, ate]);
 
   const maxFunil = Math.max(1, ...(funil.data?.etapas.map((e) => e.sessoes) ?? [1]));
-  const maxDia = Math.max(1, ...(porDia.data?.dias.map((d) => d.total) ?? [1]));
-  const totalDias = porDia.data?.dias.reduce((s, d) => s + d.total, 0) ?? 0;
 
   return (
     <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-2">
@@ -87,29 +85,10 @@ export default function MetricsExtra({ de, ate }: { de: string; ate: string }) {
       </div>
 
       <div className={`${card} xl:col-span-2`}>
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="font-extrabold">Pedidos por dia</h3>
-          {porDia.data && <span className="text-sm text-muted">{totalDias} pedido(s) no período · <span className="inline-block h-2 w-2 rounded-full bg-brand" /> feitos <span className="ml-1 inline-block h-2 w-2 rounded-full bg-accent" /> cancelados</span>}
-        </div>
+        <h3 className="mb-4 font-extrabold">Pedidos por dia</h3>
         {porDia.loading && <Loading className="py-6" />}
         {porDia.error && <ErrorState error={porDia.error} onRetry={porDia.reload} className="py-6" />}
-        {porDia.data && (
-          <div className="flex h-40 items-end gap-[2px] overflow-x-auto" role="img" aria-label={`Pedidos por dia: ${totalDias} no período`}>
-            {porDia.data.dias.map((d) => (
-              <div key={d.data} title={`${formatDateOnly(d.data)}: ${d.total} pedido(s)${d.cancelados ? `, ${d.cancelados} cancelado(s)` : ''}`}
-                className="flex h-full min-w-2 flex-1 flex-col justify-end">
-                <div className="rounded-t-sm bg-brand" style={{ height: `${((d.total - d.cancelados) / maxDia) * 100}%` }} />
-                {d.cancelados > 0 && <div className="bg-accent" style={{ height: `${(d.cancelados / maxDia) * 100}%` }} />}
-              </div>
-            ))}
-          </div>
-        )}
-        {porDia.data && porDia.data.dias.length > 0 && (
-          <div className="mt-1 flex justify-between text-xs text-muted">
-            <span>{formatDateOnly(porDia.data.dias[0].data)}</span>
-            <span>{formatDateOnly(porDia.data.dias[porDia.data.dias.length - 1].data)}</span>
-          </div>
-        )}
+        {porDia.data && <OrdersChart dias={porDia.data.dias} />}
       </div>
 
       <div className={card}>

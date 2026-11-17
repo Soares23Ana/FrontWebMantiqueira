@@ -142,7 +142,7 @@ export default function Imports() {
             <tr key={i.id_sincronizacao}>
               <td className="px-4 py-3 text-sm">{formatDateTime(i.iniciado_em)}</td>
               <td className="px-4 text-sm">{TIPO_LABEL[i.tipo] ?? i.tipo}{i.simulado && <span className="ml-1 rounded-full bg-surface px-2 py-0.5 text-xs">simulação</span>}</td>
-              <td className="px-4"><span className={`rounded-full px-3 py-1 text-sm font-medium ${STATUS_STYLE[i.status] ?? ''}`}>{i.status}</span></td>
+              <td className="px-4"><span className={`inline-block whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium ${STATUS_STYLE[i.status] ?? ''}`}>{i.status}</span></td>
               <td className="px-4">{i.linhas}</td>
               <td className="px-4 text-sm">{i.criados} / {i.atualizados}</td>
               <td className={`px-4 ${i.com_erro ? 'font-extrabold text-accent' : ''}`}>{i.com_erro}</td>
@@ -166,7 +166,7 @@ function Report({ r, status, mensagem }: { r: Partial<Resultado['relatorio']> & 
   return (
     <>
       <p className="mb-3 flex flex-wrap items-center gap-2">
-        <span className={`rounded-full px-3 py-1 text-sm font-medium ${STATUS_STYLE[status] ?? ''}`}>{status}</span>
+        <span className={`inline-block whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium ${STATUS_STYLE[status] ?? ''}`}>{status}</span>
         {r.simulado && <span className="rounded-full bg-surface px-3 py-1 text-sm">Simulação: nada foi gravado</span>}
       </p>
       {mensagem && <p className="mb-3 text-sm text-muted">{mensagem}</p>}

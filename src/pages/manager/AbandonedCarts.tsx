@@ -83,9 +83,9 @@ export default function AbandonedCarts() {
               <td className="px-4 text-sm">{formatTempoParado(c.minutos_parado)}<span className="block text-muted">{formatDateTime(c.ultimo_movimento_em)}</span></td>
               <td className="px-4 text-sm">
                 {c.contatado_em
-                  ? <><span className="rounded-full bg-green-100 px-3 py-1 font-medium text-green-800">Contatado</span>
+                  ? <><span className="inline-block whitespace-nowrap rounded-full bg-green-100 px-3 py-1 font-medium text-green-800">Contatado</span>
                     <span className="mt-1 block text-muted">{formatDateTime(c.contatado_em)}{c.contatado_por ? ` · ${c.contatado_por.nome}` : ''}</span></>
-                  : <span className="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">Sem contato</span>}
+                  : <span className="inline-block whitespace-nowrap rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-800">Sem contato</span>}
               </td>
               <td className="px-4 text-sm">
                 <div className="flex flex-wrap gap-2">
