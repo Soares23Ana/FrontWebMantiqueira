@@ -54,7 +54,7 @@ export function useTheme() {
 }
 
 const FUNDO_ESCURO = [20, 26, 63]; // o fundo dos cartões no modo noturno (#141a3f)
-const CONTRASTE_MINIMO = 7; // nível AAA: as cores de marca aparecem em títulos e textos grandes sobre o fundo escuro e precisam ser bem legíveis
+const CONTRASTE_MINIMO = 10; // acima do nível AAA (7): as cores de marca aparecem em títulos e textos grandes sobre o fundo escuro e precisam ser bem legíveis
 
 function luminancia([r, g, b]: number[]): number {
   const f = (v: number) => {
