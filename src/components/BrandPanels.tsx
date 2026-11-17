@@ -15,7 +15,7 @@ export default function BrandPanels() {
               <h2 className="text-5xl font-extrabold leading-none tracking-tight md:text-8xl">{p.name}</h2>
               <p className="mb-8 mt-5 max-w-sm text-lg opacity-90">{p.text}</p>
               <Link to={`/marca/${p.id}`}
-                className="inline-block rounded-full bg-white px-7 py-3 font-extrabold text-brand-dark transition hover:-translate-y-0.5">
+                className="inline-block rounded-full bg-white px-7 py-3 font-extrabold text-[#2b3990] transition hover:-translate-y-0.5 dark:text-white">
                 Ver produtos
               </Link>
             </Reveal>
