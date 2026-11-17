@@ -61,26 +61,27 @@ export default function Campaigns() {
       {data?.campanhas.length === 0 && <p className="rounded-2xl bg-white py-12 text-center text-muted">Nenhuma campanha.</p>}
       <div className="grid gap-4 md:grid-cols-2">
         {data?.campanhas.map((c) => (
-          <article key={c.id_campanha} className="relative rounded-2xl border border-black/10 bg-white p-5 text-center">
-            <div className="absolute right-3 top-3 flex gap-1">
-              <IconButton icon="edit" label="Editar" onClick={() => setEditing(c)} />
-              <IconButton icon="trash" label="Excluir" danger onClick={() => remove(c)} />
-            </div>
-            <div className="flex flex-col items-center px-10">
+          <article key={c.id_campanha} className="flex items-start gap-3 rounded-2xl border border-black/10 bg-white p-5">
+            {/* o texto fica centralizado na área da esquerda; os ícones ocupam a coluna da direita */}
+            <div className="flex min-w-0 flex-1 flex-col items-center text-center">
               <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${SITUACAO[c.situacao]}`}>{c.situacao}</span>
               <h3 className="mt-2 text-lg font-extrabold">{c.titulo}</h3>
               {c.selo && <span className="mt-1 inline-block rounded-full bg-accent px-3 py-1 text-xs font-extrabold text-white">{c.selo}</span>}
               <p className="mt-2 text-sm text-muted">{formatDateTime(c.inicio_em)} até {formatDateTime(c.fim_em)}</p>
+              <div className="mt-3 flex flex-wrap justify-center gap-1">
+                {c.produtos.slice(0, 10).map((p) => (
+                  <img key={p.id_produto} src={imageUrl(p.imagem_url)} alt={p.nome} title={p.nome}
+                    className={`h-10 w-10 rounded-lg bg-surface object-contain ${p.ativo ? '' : 'opacity-40'}`} />
+                ))}
+                {c.total_produtos > 10 && <span className="grid h-10 w-10 place-items-center rounded-lg bg-surface text-xs">+{c.total_produtos - 10}</span>}
+              </div>
+              <p className="mt-2 text-xs text-muted">{c.total_produtos} produto(s)</p>
+              {c.situacao === 'ativa' && <button onClick={() => endNow(c)} className="mt-2 text-sm font-extrabold text-accent">Encerrar agora</button>}
             </div>
-            <div className="mt-3 flex flex-wrap justify-center gap-1">
-              {c.produtos.slice(0, 10).map((p) => (
-                <img key={p.id_produto} src={imageUrl(p.imagem_url)} alt={p.nome} title={p.nome}
-                  className={`h-10 w-10 rounded-lg bg-surface object-contain ${p.ativo ? '' : 'opacity-40'}`} />
-              ))}
-              {c.total_produtos > 10 && <span className="grid h-10 w-10 place-items-center rounded-lg bg-surface text-xs">+{c.total_produtos - 10}</span>}
+            <div className="flex shrink-0 gap-1">
+              <IconButton icon="edit" label="Editar" onClick={() => setEditing(c)} />
+              <IconButton icon="trash" label="Excluir" danger onClick={() => remove(c)} />
             </div>
-            <p className="mt-2 text-xs text-muted">{c.total_produtos} produto(s)</p>
-            {c.situacao === 'ativa' && <button onClick={() => endNow(c)} className="mt-2 block w-full text-sm font-extrabold text-accent">Encerrar agora</button>}
           </article>
         ))}
       </div>
