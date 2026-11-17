@@ -76,3 +76,23 @@ html { scroll-behavior: smooth; }
 @layer base {
   img[src^="/img/"], img[src*="/arquivos/"] { border-radius: 0.75rem; }
 }
+
+/* ---------- Painéis das marcas na página inicial (só no modo noturno) ----------
+   Em vez de uma cor chapada, cada painel vai de um tom profundo até a cor viva, na diagonal, com um brilho suave do lado
+   da foto. O texto branco fica na parte mais escura do gradiente, então o contraste continua alto (mínimo 4,6 para 1).
+   No modo claro continuam as cores chapadas de antes (classes bg-brand, bg-brand-dark e bg-accent). */
+.dark .painel-azul-escuro {
+  background:
+    radial-gradient(55% 65% at 76% 48%, rgb(100 125 255 / 0.30), transparent 70%),
+    linear-gradient(135deg, #0b1043 0%, #1a2680 52%, #2c3fcb 100%);
+}
+.dark .painel-azul {
+  background:
+    radial-gradient(55% 65% at 76% 48%, rgb(130 135 255 / 0.28), transparent 70%),
+    linear-gradient(135deg, #111660 0%, #2b2f9e 52%, #4248d8 100%);
+}
+.dark .painel-vermelho {
+  background:
+    radial-gradient(55% 65% at 76% 48%, rgb(255 110 120 / 0.32), transparent 70%),
+    linear-gradient(135deg, #5c040d 0%, #b90817 52%, #e41d2c 100%);
+}

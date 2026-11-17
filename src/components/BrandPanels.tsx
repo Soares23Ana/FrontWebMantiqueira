@@ -3,13 +3,16 @@ import Reveal from './Reveal';
 import ZoomImage from './ZoomImage';
 import { brands } from '../data/brands';
 
+// No modo noturno, cada cor de painel (azul escuro, azul ou vermelho) vira um gradiente com um brilho atrás da foto; ver "painel-*" no index.css.
+const TONS: Record<string, string> = { 'bg-brand-dark': 'painel-azul-escuro', 'bg-brand': 'painel-azul', 'bg-accent': 'painel-vermelho' };
+
 // Cada painel sobe e cobre o anterior (position: sticky).
 export default function BrandPanels() {
   return (
     <section className="relative z-10">
       {brands.map((p, i) => (
         <article key={p.name} style={{ zIndex: i + 1 }}
-          className={`sticky top-0 grid min-h-[100svh] items-center rounded-t-[2rem] px-5 py-24 text-white ${p.bg}`}>
+          className={`sticky top-0 grid min-h-[100svh] items-center rounded-t-[2rem] px-5 py-24 text-white ${p.bg} ${TONS[p.bg] ?? ''}`}>
           <div className="mx-auto grid w-full max-w-6xl items-center gap-10 md:grid-cols-[1.2fr_1fr]">
             <Reveal>
               <h2 className="text-5xl font-extrabold leading-none tracking-tight md:text-8xl">{p.name}</h2>
