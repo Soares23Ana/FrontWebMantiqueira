@@ -45,7 +45,7 @@ export default function HoverZoom({ src, alt, className = '' }: Props) {
             className="absolute right-5 top-5 grid h-11 w-11 place-items-center rounded-full bg-white text-ink">
             <Icon name="close" />
           </button>
-          <img src={src} alt={alt} onClick={(e) => e.stopPropagation()} className="max-h-[90vh] max-w-full rounded-sm bg-white object-contain p-4" />
+          <img src={src} alt={alt} onClick={(e) => e.stopPropagation()} className="max-h-[90vh] max-w-full rounded-xl bg-[#fff] object-contain p-4" />
         </div>
       )}
     </>

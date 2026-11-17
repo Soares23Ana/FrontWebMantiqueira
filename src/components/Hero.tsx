@@ -23,7 +23,7 @@ export default function Hero() {
       {floating.map((f) => (
         <img key={f.src} src={f.src} alt=""
           style={{ transform: `translateY(${y * f.speed}px) rotate(${f.rotate}deg)` }}
-          className={`absolute hidden rounded-3xl bg-white p-3 shadow-2xl will-change-transform md:block ${f.position}`} />
+          className={`absolute hidden rounded-3xl bg-[#fff] p-3 shadow-2xl will-change-transform md:block ${f.position}`} />
       ))}
       <div className="mx-auto flex h-full max-w-6xl items-center px-5 pt-24">
         <div style={{ transform: `translateY(${y * -0.15}px)`, opacity: Math.max(0, 1 - y / 600) }} className="relative z-10 max-w-2xl">

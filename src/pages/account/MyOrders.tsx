@@ -41,7 +41,7 @@ export default function MyOrders() {
                   <p className="text-sm text-muted">{formatDate(p.data_pedido)} · {p.total_itens} unidades</p>
                   <div className="mt-2 flex -space-x-2">
                     {p.itens.slice(0, 5).map((i) => (
-                      <img key={i.id_produto} src={imageUrl(i.imagem_url)} alt={i.nome} title={i.nome} className="h-9 w-9 rounded-full bg-white object-contain ring-2 ring-white" />
+                      <img key={i.id_produto} src={imageUrl(i.imagem_url)} alt={i.nome} title={i.nome} className="h-9 w-9 rounded-full bg-[#fff] object-contain ring-2 ring-white" />
                     ))}
                     {p.itens.length > 5 && <span className="grid h-9 w-9 place-items-center rounded-full bg-surface text-xs ring-2 ring-white">+{p.itens.length - 5}</span>}
                   </div>

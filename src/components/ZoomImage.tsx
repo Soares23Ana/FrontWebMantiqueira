@@ -13,7 +13,7 @@ export default function ZoomImage({ src, alt, className = '' }: Props) {
   const progress = useElementProgress(ref);
   return (
     <div ref={ref} style={{ transform: `scale(${0.75 + progress * 0.4})` }}
-      className={`rounded-3xl bg-white p-3 shadow-2xl will-change-transform ${className}`}>
+      className={`rounded-3xl bg-[#fff] p-3 shadow-2xl will-change-transform ${className}`}>
       <img src={src} alt={alt} className="mx-auto max-h-80 w-full object-contain" />
     </div>
   );
