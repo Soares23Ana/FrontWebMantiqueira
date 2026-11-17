@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import Reveal from './Reveal';
+import TextRoll from './TextRoll';
 import ZoomImage from './ZoomImage';
 import { brands } from '../data/brands';
 
@@ -16,7 +17,7 @@ export default function BrandPanels() {
           className={`sticky top-0 grid min-h-[100svh] items-center rounded-t-[2rem] px-5 py-24 text-white ${p.bg} ${TONS[p.bg] ?? ''}`}>
           <div className="mx-auto grid w-full max-w-6xl items-center gap-10 md:grid-cols-[1.2fr_1fr]">
             <Reveal>
-              <h2 className="text-5xl font-extrabold leading-none tracking-tight md:text-8xl">{p.name}</h2>
+              <h2 className="group/roll cursor-default text-5xl font-extrabold leading-none tracking-tight md:text-8xl"><TextRoll>{p.name}</TextRoll></h2>
               <p className="mb-8 mt-5 max-w-sm text-lg opacity-90">{p.text}</p>
               <Link to={`/marca/${p.id}`}
                 className="inline-block rounded-full bg-white px-7 py-3 font-extrabold text-[#2b3990] transition hover:-translate-y-0.5 dark:text-white">
