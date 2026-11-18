@@ -91,6 +91,8 @@ npm run dev             # site em http://localhost:5173
 | --- | --- |
 | `npm run dev` | Liga o site em modo de desenvolvimento |
 | `npm run build` | Verifica os tipos (TypeScript) e gera a versão de produção na pasta `dist` |
+| `npm test` | Roda os testes automatizados (Vitest + Testing Library), sem precisar do back |
+| `npm run test:watch` | Roda os testes de novo a cada alteração no código |
 | `npm run preview` | Mostra a versão de produção no computador |
 
 ### Variáveis de ambiente

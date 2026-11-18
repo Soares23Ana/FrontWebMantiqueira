@@ -6,7 +6,7 @@ interface Props {
 
 export default function Toggle({ checked, label, onChange }: Props) {
   return (
-    <button role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}
       className={`group relative h-6 w-11 shrink-0 rounded-full ring-1 ring-inset ring-white/25 transition-colors duration-300 motion-reduce:transition-none ${checked ? 'bg-[#4757f0]' : 'bg-[#e30613]'}`}>
       {/* a bolinha desliza com um leve "quique" no fim e se alonga enquanto o botão é pressionado */}
       <span style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
