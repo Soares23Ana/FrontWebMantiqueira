@@ -62,13 +62,22 @@ function ProductList() {
     [busca, categoria, disp, inativos, ordenar, page, pageSize],
   );
 
+  // Contagem do catálogo, sem filtros: todos os cadastrados e os ativos (os que aparecem no site agora).
+  const totalTodos = useApi(() => api.get<{ paginacao: Paginacao }>('/produtos', { incluir_inativos: true, pagina: 1, limite: 1 }), []);
+  const totalAtivos = useApi(() => api.get<{ paginacao: Paginacao }>('/produtos', { pagina: 1, limite: 1 }), []);
+  const nTodos = totalTodos.data?.paginacao.total;
+  const nAtivos = totalAtivos.data?.paginacao.total;
+
   const [editing, setEditing] = useState<Produto | 'novo' | null>(null);
   const [stockOf, setStockOf] = useState<Produto | null>(null);
+  const [stockFoco, setStockFoco] = useState<'ajuste' | 'historico'>('ajuste');
   const [bulkOpen, setBulkOpen] = useState(false);
 
   const resetPage = () => setPage(1);
   const changed = () => {
     lista.reload();
+    totalTodos.reload();
+    totalAtivos.reload();
     refreshCounters();
   };
 
@@ -95,6 +104,12 @@ function ProductList() {
 
   return (
     <>
+      {nTodos !== undefined && nAtivos !== undefined && (
+        <p role="status" className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+          <span className="rounded-full bg-brand/10 px-3 py-1 font-extrabold text-brand">{nAtivos} {nAtivos === 1 ? 'produto no site' : 'produtos no site'}</span>
+          <span className="text-muted">{nTodos} cadastrados no total{nTodos > nAtivos ? ` · ${nTodos - nAtivos} ${nTodos - nAtivos === 1 ? 'inativo' : 'inativos'}` : ''}</span>
+        </p>
+      )}
       <div className="mb-4 flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={exportCsv}><Icon name="download" className="mr-1 inline h-5 w-5 align-text-bottom" />Exportar</Button>
         <Button variant="ghost" onClick={() => setBulkOpen(true)}><Icon name="upload" className="mr-1 inline h-5 w-5 align-text-bottom" />Fotos em lote</Button>
@@ -143,11 +158,16 @@ function ProductList() {
                 <p className="font-extrabold">{p.estoque} <span className="font-normal text-muted">/ mín. {p.estoque_minimo}</span></p>
                 <Availability value={p.disponibilidade} />
                 {p.multiplo_venda > 1 && <p className="text-xs text-muted">Múltiplo {p.multiplo_venda}</p>}
+                <button type="button" onClick={() => { setStockFoco('historico'); setStockOf(p); }}
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-extrabold text-brand hover:underline">
+                  <Icon name="history" className="h-4 w-4" />Quem mexeu no estoque
+                </button>
               </td>
               <td className="px-4">
                 <div className="flex">
                   <IconButton icon="edit" label="Editar produto" onClick={() => setEditing(p)} />
-                  <IconButton icon="box" label="Ajustar estoque e ver histórico" onClick={() => setStockOf(p)} />
+                  <IconButton icon="box" label="Ajustar estoque" onClick={() => { setStockFoco('ajuste'); setStockOf(p); }} />
+                  <IconButton icon="history" label="Histórico de estoque (quem alterou e quando)" onClick={() => { setStockFoco('historico'); setStockOf(p); }} />
                 </div>
               </td>
               <td className="px-4"><Toggle checked={!!p.ativo} label={`Ativar ${p.nome}`} onChange={(v) => toggleActive(p, v)} /></td>
@@ -161,7 +181,7 @@ function ProductList() {
           onClose={() => setEditing(null)} onSaved={() => { setEditing(null); changed(); }} />
       )}
       {bulkOpen && <BulkPhotosModal onClose={() => setBulkOpen(false)} onDone={changed} />}
-      {stockOf && <StockModal product={stockOf} onClose={() => setStockOf(null)} onSaved={changed} />}
+      {stockOf && <StockModal product={stockOf} foco={stockFoco} onClose={() => setStockOf(null)} onSaved={changed} />}
     </>
   );
 }
@@ -280,16 +300,12 @@ function ProductFormModal({ product, categorias, marcas, onClose, onSaved }: {
               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={onFile} />
             </label>
             {errors.imagem && <small className="block text-accent">{errors.imagem}</small>}
-            <label className="mt-3 block text-sm">
-              <span className="text-muted">Ou cole o link da imagem</span>
-              <input type="url" inputMode="url" maxLength={2048} value={link} onChange={onLink} placeholder="https://..."
-                aria-invalid={Boolean(errors.imagem_link)}
-                className="mt-1 w-full rounded-xl border border-black/10 bg-surface px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" />
-              <small className="block text-muted">Endereço que comece com http:// ou https://</small>
-            </label>
-            {errors.imagem_link && <small role="alert" className="block text-accent">{errors.imagem_link}</small>}
           </div>
           <div>
+            {/* Largura total da coluna dos campos: o link da imagem costuma ser comprido. */}
+            <Field label="Ou cole o link da imagem" mandatory={false} type="url" inputMode="url" maxLength={2048} placeholder="https://exemplo.com/foto.jpg"
+              value={link} onChange={onLink} error={errors.imagem_link} />
+            <small className="block text-muted">Endereço que comece com http:// ou https://. Vale só um: o arquivo ou o link.</small>
             <div className="grid gap-x-4 sm:grid-cols-[140px_minmax(0,1fr)]">
               <Field label="SKU" value={form.sku} onChange={set('sku')} error={errors.sku} />
               <Field label="Nome" value={form.nome} onChange={set('nome')} error={errors.nome} />
@@ -335,7 +351,7 @@ function ProductFormModal({ product, categorias, marcas, onClose, onSaved }: {
 
 const TIPO_MOV: Record<Movimentacao['tipo'], string> = { ajuste: 'Ajuste', pedido: 'Pedido', cancelamento: 'Cancelamento', importacao: 'Importação' };
 
-function StockModal({ product, onClose, onSaved }: { product: Produto; onClose: () => void; onSaved: () => void }) {
+function StockModal({ product, foco, onClose, onSaved }: { product: Produto; foco: 'ajuste' | 'historico'; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const [estoque, setEstoque] = useState(product.estoque ?? 0);
   const [modo, setModo] = useState<'Somar / subtrair' | 'Definir valor'>('Somar / subtrair');
@@ -369,28 +385,35 @@ function StockModal({ product, onClose, onSaved }: { product: Produto; onClose: 
     }
   };
 
-  return (
-    <Modal title="Estoque" onClose={onClose} wide>
-      <p className="font-medium">{product.nome}</p>
-      <p className="text-sm text-muted">SKU {product.sku} · mínimo {product.estoque_minimo}</p>
-      <p className="my-4 text-4xl font-extrabold text-brand">{estoque} <span className="text-base font-medium text-muted">unidades</span></p>
-      <form onSubmit={submit} noValidate className="rounded-2xl border border-black/10 p-4">
-        <FormError message={formError} />
-        <ChipFilter label="Tipo de ajuste" options={['Somar / subtrair', 'Definir valor'] as const} value={modo} onChange={setModo} />
-        <div className="grid gap-x-4 sm:grid-cols-[160px_minmax(0,1fr)]">
-          <Field label={modo === 'Definir valor' ? 'Novo estoque' : 'Ajuste (ex.: -2 ou 24)'} type="number" value={valor}
-            onChange={(e) => setValor(e.target.value)} error={errors.quantidade ?? errors.ajuste} />
-          <Field label="Observação" placeholder="Ex.: avaria, contagem, chegada de mercadoria" maxLength={500} value={observacao}
-            onChange={(e) => setObservacao(e.target.value)} error={errors.observacao} />
-        </div>
-        <Button type="submit" variant="primary" className="mt-4">Salvar ajuste</Button>
-      </form>
+  const ultima = movs.data?.movimentacoes[0];
 
-      <h4 className="mb-2 mt-6 flex items-center gap-2 font-extrabold"><Icon name="history" className="h-5 w-5" />Histórico de estoque</h4>
+  const ajuste = (
+    <form onSubmit={submit} noValidate className="mt-4 rounded-2xl border border-black/10 p-4">
+      <h4 className="mb-1 font-extrabold">Ajustar estoque</h4>
+      <FormError message={formError} />
+      <ChipFilter label="Tipo de ajuste" options={['Somar / subtrair', 'Definir valor'] as const} value={modo} onChange={setModo} />
+      <div className="grid gap-x-4 sm:grid-cols-[160px_minmax(0,1fr)]">
+        <Field label={modo === 'Definir valor' ? 'Novo estoque' : 'Ajuste (ex.: -2 ou 24)'} type="number" value={valor}
+          onChange={(e) => setValor(e.target.value)} error={errors.quantidade ?? errors.ajuste} />
+        <Field label="Observação" placeholder="Ex.: avaria, contagem, chegada de mercadoria" maxLength={500} value={observacao}
+          onChange={(e) => setObservacao(e.target.value)} error={errors.observacao} />
+      </div>
+      <Button type="submit" variant="primary" className="mt-4">Salvar ajuste</Button>
+    </form>
+  );
+
+  const historico = (
+    <section className="mt-4" aria-label="Histórico de estoque">
+      <h4 className="mb-1 flex items-center gap-2 text-lg font-extrabold"><Icon name="history" className="h-5 w-5" />Histórico de estoque</h4>
+      {ultima && (
+        <p className="mb-3 rounded-xl bg-brand/10 p-3 text-sm text-brand">
+          Última alteração: <b>{formatDateTime(ultima.criado_em)}</b>{ultima.usuario ? <> por <b>{ultima.usuario.nome}</b></> : ' (automática)'} · {TIPO_MOV[ultima.tipo]}
+        </p>
+      )}
       {movs.loading && <Loading className="py-6" />}
       {movs.error && <ErrorState error={movs.error} onRetry={movs.reload} className="py-6" />}
       {movs.data?.movimentacoes.length === 0 && <p className="text-sm text-muted">Sem movimentações.</p>}
-      <ul className="grid max-h-72 gap-2 overflow-y-auto">
+      <ul className="grid max-h-96 gap-2 overflow-y-auto">
         {movs.data?.movimentacoes.map((m) => (
           <li key={m.id_movimentacao} className="flex flex-wrap items-center gap-x-3 rounded-xl bg-surface p-3 text-sm">
             <span className={`w-14 font-extrabold ${m.quantidade < 0 ? 'text-accent' : 'text-green-700'}`}>{m.quantidade > 0 ? '+' : ''}{m.quantidade}</span>
@@ -402,6 +425,15 @@ function StockModal({ product, onClose, onSaved }: { product: Produto; onClose: 
           </li>
         ))}
       </ul>
+    </section>
+  );
+
+  return (
+    <Modal title={foco === 'historico' ? 'Histórico de estoque' : 'Estoque'} onClose={onClose} wide>
+      <p className="font-medium">{product.nome}</p>
+      <p className="text-sm text-muted">SKU {product.sku} · mínimo {product.estoque_minimo}</p>
+      <p className="my-4 text-4xl font-extrabold text-brand">{estoque} <span className="text-base font-medium text-muted">unidades</span></p>
+      {foco === 'historico' ? <>{historico}{ajuste}</> : <>{ajuste}{historico}</>}
     </Modal>
   );
 }

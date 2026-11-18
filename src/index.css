@@ -73,6 +73,11 @@ html { scroll-behavior: smooth; }
 
 /* Fotos de produto e de marca (têm fundo branco) com os cantos arredondados em toda a loja e no gestor.
    Fica na camada base para as classes do Tailwind (como rounded-full nas miniaturas) continuarem mandando. */
+/* Campos de formulário: no modo claro a borda é leve, mas visível; campo com erro fica vermelho nos dois temas. */
+html:not(.dark) .campo { border-color: rgb(0 0 0 / 0.2); }
+html:not(.dark) .campo:focus { border-color: var(--color-brand); }
+html .campo[aria-invalid="true"] { border-color: var(--color-accent); }
+
 @layer base {
   img[src^="/img/"], img[src*="/arquivos/"] { border-radius: 0.75rem; }
 }

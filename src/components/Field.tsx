@@ -9,11 +9,11 @@ type Props = ComponentProps<'input'> & {
   mandatory?: boolean; // mostra o * vermelho (padrão: sim)
 };
 
-const inputClass = 'w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-ink outline-none focus:border-brand disabled:bg-surface';
+const inputClass = 'campo w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-ink outline-none focus:border-brand disabled:bg-surface';
 
 export default function Field({ label, error, adornment, mandatory = true, className = '', ...input }: Props) {
   return (
-    <label className={`mt-3 grid gap-1.5 text-muted ${className}`}>
+    <label className={`mt-3 grid content-start gap-1.5 text-muted ${className}`}>
       <span>{label} {mandatory && <b className="text-accent">*</b>}</span>
       <span className="relative block">
         <input {...input} aria-invalid={!!error} className={`${inputClass} ${adornment ? 'pr-20' : ''}`} />
@@ -48,7 +48,7 @@ type SelectProps = ComponentProps<'select'> & { label: string; error?: string; m
 
 export function SelectField({ label, error, mandatory = true, className = '', children, ...select }: SelectProps) {
   return (
-    <label className={`mt-3 grid gap-1.5 text-muted ${className}`}>
+    <label className={`mt-3 grid content-start gap-1.5 text-muted ${className}`}>
       <span>{label} {mandatory && <b className="text-accent">*</b>}</span>
       <select {...select} aria-invalid={!!error} className={inputClass}>{children}</select>
       {error && <small role="alert" className="text-accent">{error}</small>}
@@ -60,7 +60,7 @@ type TextAreaProps = ComponentProps<'textarea'> & { label: string; error?: strin
 
 export function TextAreaField({ label, error, mandatory = false, className = '', ...area }: TextAreaProps) {
   return (
-    <label className={`mt-3 grid gap-1.5 text-muted ${className}`}>
+    <label className={`mt-3 grid content-start gap-1.5 text-muted ${className}`}>
       <span>{label} {mandatory && <b className="text-accent">*</b>}</span>
       <textarea rows={3} {...area} aria-invalid={!!error} className={inputClass} />
       {error && <small role="alert" className="text-accent">{error}</small>}

@@ -1,4 +1,4 @@
-import { Link, NavLink, useMatch } from 'react-router-dom';
+import { Link, NavLink, useLocation, useMatch } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
@@ -17,9 +17,14 @@ interface IconLinkProps {
 }
 
 function IconLink({ label, icon, badge = 0, to, voltarPara }: IconLinkProps) {
+  const location = useLocation();
+  // Sem login, o usuário, os favoritos e o carrinho levam todos a /entrar. Para só o ícone clicado ficar em destaque,
+  // a tela de entrar guarda de onde a pessoa veio (state.from) e cada ícone compara com o seu próprio destino.
+  const veioDe = (location.state as { from?: string } | null)?.from ?? null;
+  const doMesmoOrigem = to !== '/entrar' || (voltarPara ?? null) === veioDe;
   return (
     <NavLink to={to} aria-label={label} title={label} state={voltarPara ? { from: voltarPara } : undefined}
-      className={({ isActive }) => `relative grid h-11 w-11 place-items-center rounded-full transition hover:bg-surface ${isActive ? 'text-accent' : ''}`}>
+      className={({ isActive }) => `relative grid h-11 w-11 place-items-center rounded-full transition hover:bg-surface ${isActive && doMesmoOrigem ? 'text-accent' : ''}`}>
       <Icon name={icon} />
       {badge > 0 && (
         <span className="absolute right-0 top-0 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-xs font-extrabold text-white">

@@ -59,13 +59,35 @@ export default function Register() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    // Todo campo obrigatório vazio ou incompleto ganha o seu próprio aviso (a API ainda confere tudo de novo).
     const local: Record<string, string> = {};
-    if (!cnpjOk) local.cnpj = 'Informe um CNPJ válido.';
-    if (form.senha.length < 8) local.senha = 'A senha precisa ter pelo menos 8 caracteres.';
-    if (form.senha !== form.confirmar) local.confirmar = 'As senhas não conferem.';
+    if (!form.cnpj.trim()) local.cnpj = 'Informe o CNPJ.';
+    else if (!cnpjOk) local.cnpj = 'Informe um CNPJ válido.';
+    if (!form.nome.trim()) local.nome = 'Informe o nome do responsável.';
+    if (!form.email.trim()) local.email = 'Informe o e-mail.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) local.email = 'Informe um e-mail válido.';
+    const fone = form.telefone.replace(/\D/g, '');
+    if (!fone) local.telefone = 'Informe o telefone com DDD.';
+    else if (fone.length < 10) local.telefone = 'Telefone incompleto. Informe com DDD.';
+    if (!form.senha) local.senha = 'Informe a senha.';
+    else if (form.senha.length < 8) local.senha = 'A senha precisa ter pelo menos 8 caracteres.';
+    if (!form.confirmar) local.confirmar = 'Confirme a senha.';
+    else if (form.senha !== form.confirmar) local.confirmar = 'As senhas não conferem.';
+    const cep = endereco.cep.replace(/\D/g, '');
+    if (!cep) local['endereco.cep'] = 'Informe o CEP.';
+    else if (cep.length < 8) local['endereco.cep'] = 'CEP incompleto.';
+    if (!endereco.logradouro.trim()) local['endereco.logradouro'] = 'Informe o logradouro.';
+    if (!endereco.numero.trim()) local['endereco.numero'] = 'Informe o número.';
+    if (!endereco.bairro.trim()) local['endereco.bairro'] = 'Informe o bairro.';
+    if (!endereco.cidade.trim()) local['endereco.cidade'] = 'Informe a cidade.';
     setErrors(local);
     setFormError('');
-    if (Object.keys(local).length) return;
+    if (Object.keys(local).length) {
+      setFormError('Confira os campos destacados.');
+      // leva a pessoa ao primeiro campo com problema
+      requestAnimationFrame(() => document.querySelector<HTMLElement>('form [aria-invalid="true"]')?.focus());
+      return;
+    }
     setSending(true);
     try {
       const { confirmar: _c, ...dados } = form;
@@ -93,7 +115,7 @@ export default function Register() {
       <Logo variante="vertical" className="mb-4 h-24" />
       <h2 className="text-3xl font-extrabold">Criar conta</h2>
       <p className="mb-8 text-muted">Cadastro para lojistas. Já tem conta? <Link to="/entrar" className="font-extrabold text-brand">Entrar</Link></p>
-      <form onSubmit={submit} noValidate className="rounded-3xl bg-white p-6">
+      <form onSubmit={submit} noValidate className="rounded-3xl border border-black/10 bg-white p-6 shadow-lg">
         <FormError message={formError} />
         <h3 className="font-extrabold">Empresa e responsável</h3>
         <div className="grid gap-x-4 sm:grid-cols-2">
