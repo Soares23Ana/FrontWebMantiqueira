@@ -38,8 +38,6 @@ export default function BrandShowcase({ products, color }: Props) {
     <div>
       <div style={{ background: fundo, ...(escuro ? {} : { borderColor: `color-mix(in srgb, ${color} 30%, white)` }) }}
         className={`relative grid min-h-[26rem] items-center gap-6 overflow-hidden rounded-3xl p-6 md:grid-cols-2 md:p-12 ${escuro ? '' : 'border'}`}>
-        <div className={`absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed ${escuro ? 'opacity-30' : 'opacity-60'}`}
-          style={{ borderColor: color }} />
         <img key={p.id_produto} src={imageUrl(p.imagem_url)} alt={p.nome}
           className={`relative mx-auto max-h-80 w-full object-contain md:max-h-96 ${escuro ? 'rounded-2xl bg-[#fff] p-4' : 'mix-blend-multiply drop-shadow-xl'}`} />
         <div className={`relative max-w-sm rounded-2xl p-6 backdrop-blur md:justify-self-start ${escuro ? 'bg-white/80 shadow-sm' : 'border border-black/10 bg-white shadow-xl'}`}>
