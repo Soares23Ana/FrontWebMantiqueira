@@ -65,6 +65,10 @@ function ProductList() {
   // Contagem do catálogo, sem filtros: todos os cadastrados e os ativos (os que aparecem no site agora).
   const totalTodos = useApi(() => api.get<{ paginacao: Paginacao }>('/produtos', { incluir_inativos: true, pagina: 1, limite: 1 }), []);
   const totalAtivos = useApi(() => api.get<{ paginacao: Paginacao }>('/produtos', { pagina: 1, limite: 1 }), []);
+  // Produtos sem foto: vêm da lista completa (a API não tem filtro "sem foto"). Servem para o contador, o filtro e a lista de SKUs.
+  const [soSemFoto, setSoSemFoto] = useState(false);
+  const catalogo = useApi(() => fetchAllPages<Produto>('/produtos', 'produtos', { incluir_inativos: true }), []);
+  const semFoto = (catalogo.data ?? []).filter((p) => !p.imagem_url);
   const nTodos = totalTodos.data?.paginacao.total;
   const nAtivos = totalAtivos.data?.paginacao.total;
 
@@ -74,8 +78,19 @@ function ProductList() {
   const [bulkOpen, setBulkOpen] = useState(false);
 
   const resetPage = () => setPage(1);
+  const termo = busca.toLowerCase();
+  const semFotoFiltrados = semFoto.filter((p) => !termo || [p.nome, p.sku, p.marca?.nome ?? ''].some((t) => t.toLowerCase().includes(termo)));
+  const linhas = soSemFoto ? semFotoFiltrados.slice((page - 1) * pageSize, page * pageSize) : lista.data?.produtos;
+  const totalLinhas = soSemFoto ? semFotoFiltrados.length : lista.data?.paginacao.total;
+  const carregando = soSemFoto ? catalogo.loading && !catalogo.data : lista.loading;
+  const pronto = soSemFoto ? Boolean(catalogo.data) : Boolean(lista.data);
+
+  // Lista de SKUs sem foto: a empresa nomeia cada arquivo do ZIP com o SKU (ex.: 110606.jpg).
+  const baixarSemFoto = () => downloadCsv('produtos-sem-foto.csv', ['SKU', 'Produto', 'Marca', 'Nome do arquivo sugerido', 'Ativo'],
+    semFoto.map((p) => [p.sku, p.nome, p.marca?.nome ?? '', `${p.sku}.jpg`, p.ativo ? 'Sim' : 'Não']));
   const changed = () => {
     lista.reload();
+    catalogo.reload();
     totalTodos.reload();
     totalAtivos.reload();
     refreshCounters();
@@ -108,6 +123,18 @@ function ProductList() {
         <p role="status" className="mb-3 flex flex-wrap items-center gap-2 text-sm">
           <span className="rounded-full bg-brand/10 px-3 py-1 font-extrabold text-brand">{nAtivos} {nAtivos === 1 ? 'produto no site' : 'produtos no site'}</span>
           <span className="text-muted">{nTodos} cadastrados no total{nTodos > nAtivos ? ` · ${nTodos - nAtivos} ${nTodos - nAtivos === 1 ? 'inativo' : 'inativos'}` : ''}</span>
+          {catalogo.data && (
+            <button type="button" aria-pressed={soSemFoto} onClick={() => { setSoSemFoto((v) => !v); resetPage(); }}
+              title="Mostrar só os produtos sem foto"
+              className={`rounded-full px-3 py-1 font-extrabold transition ${soSemFoto ? 'bg-accent text-white' : semFoto.length > 0 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
+              {semFoto.length === 0 ? 'Todos com foto' : `${semFoto.length} sem foto${soSemFoto ? ' (mostrando)' : ''}`}
+            </button>
+          )}
+          {semFoto.length > 0 && (
+            <button type="button" onClick={baixarSemFoto} className="text-sm font-extrabold text-brand hover:underline">
+              Baixar lista de SKUs sem foto
+            </button>
+          )}
         </p>
       )}
       <div className="mb-4 flex flex-wrap justify-end gap-2">
@@ -140,11 +167,11 @@ function ProductList() {
 
       {lista.error ? <ErrorState error={lista.error} onRetry={lista.reload} /> : (
         <TableCard headers={['Produto', 'SKU', 'Categoria / marca', 'Estoque', 'Ações', 'Ativo']}
-          isEmpty={!lista.loading && lista.data?.produtos.length === 0} empty="Nenhum produto encontrado."
-          footer={lista.data && <Pagination page={page} pageSize={pageSize} total={lista.data.paginacao.total} onPageChange={setPage}
+          isEmpty={!carregando && linhas?.length === 0} empty={soSemFoto ? 'Nenhum produto sem foto com esses filtros.' : 'Nenhum produto encontrado.'}
+          footer={pronto && totalLinhas !== undefined && <Pagination page={page} pageSize={pageSize} total={totalLinhas} onPageChange={setPage}
             onPageSizeChange={(s) => { setPageSize(s); resetPage(); }} />}>
-          {lista.loading && <tr><td colSpan={6}><Loading className="py-8" /></td></tr>}
-          {!lista.loading && lista.data?.produtos.map((p) => (
+          {carregando && <tr><td colSpan={6}><Loading className="py-8" /></td></tr>}
+          {!carregando && linhas?.map((p) => (
             <tr key={p.id_produto} className={p.ativo ? '' : 'opacity-60'}>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
