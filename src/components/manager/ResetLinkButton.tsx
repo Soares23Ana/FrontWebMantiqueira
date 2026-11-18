@@ -10,6 +10,14 @@ interface Props {
   nome: string;            // para a mensagem de WhatsApp e o título
   telefone?: string | null;
   className?: string;
+  /** Texto do botão (padrão: "Gerar link de redefinição"). */
+  rotulo?: string;
+  /** Abre o WhatsApp do cliente, com a mensagem pronta, assim que o link é gerado. O modal continua como reserva. */
+  abrirWhatsApp?: boolean;
+  /** Chamado depois que o link foi gerado (ex.: recarregar uma lista). */
+  aoGerar?: () => void;
+  /** Chamado quando o modal com o link é fechado (ex.: atualizar uma lista só depois, para o modal não sumir antes). */
+  aoFechar?: () => void;
 }
 
 /** Telefone só com dígitos e com o 55 na frente (sem duplicar). */
@@ -19,20 +27,29 @@ function telefoneWhats(tel: string | null | undefined): string | null {
   return d.startsWith('55') && d.length >= 12 ? d : `55${d}`;
 }
 
+function urlWhatsApp(fone: string, nome: string, link: string): string {
+  const mensagem = `Olá, ${nome}! Segue o link para você criar uma nova senha na Mantiqueira (vale por 60 minutos e só pode ser usado uma vez): ${link}`;
+  return `https://wa.me/${fone}?text=${encodeURIComponent(mensagem)}`;
+}
+
 // Gera o link de redefinição de senha (uso único, vale 60 min) e mostra num modal, com copiar e WhatsApp.
 // A API devolve só o token; o endereço é montado aqui. O token não é guardado em lugar nenhum além deste estado.
-export default function ResetLinkButton({ rota, nome, telefone, className = '' }: Props) {
+export default function ResetLinkButton({ rota, nome, telefone, className = '', rotulo = 'Gerar link de redefinição', abrirWhatsApp = false, aoGerar, aoFechar }: Props) {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [dados, setDados] = useState<{ link: string; expira_em: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const fone = telefoneWhats(telefone);
 
   const gerar = async () => {
     setLoading(true);
     try {
       const r = await api.post<{ token: string; expira_em: string }>(rota);
       setCopiado(false);
-      setDados({ link: `${window.location.origin}/redefinir-senha?token=${encodeURIComponent(r.token)}`, expira_em: r.expira_em });
+      const link = `${window.location.origin}/redefinir-senha?token=${encodeURIComponent(r.token)}`;
+      setDados({ link, expira_em: r.expira_em });
+      if (abrirWhatsApp && fone) window.open(urlWhatsApp(fone, nome, link), '_blank', 'noopener');
+      aoGerar?.();
     } catch (err) {
       toast(errorMessage(err), 'error');
     } finally {
@@ -50,16 +67,14 @@ export default function ResetLinkButton({ rota, nome, telefone, className = '' }
     }
   };
 
-  const fone = telefoneWhats(telefone);
-  const mensagem = dados ? `Olá, ${nome}! Segue o link para você criar uma nova senha na Mantiqueira (vale por 60 minutos e só pode ser usado uma vez): ${dados.link}` : '';
 
   return (
     <>
       <Button type="button" variant="ghost" disabled={loading} onClick={gerar} className={`px-4 py-2 text-sm disabled:opacity-50 ${className}`}>
-        {loading ? 'Gerando...' : 'Gerar link de redefinição'}
+        {loading ? 'Gerando...' : rotulo}
       </Button>
       {dados && (
-        <Modal title="Link de redefinição de senha" onClose={() => setDados(null)}>
+        <Modal title="Link de redefinição de senha" onClose={() => { setDados(null); aoFechar?.(); }}>
           <p className="rounded-xl bg-amber-100 p-3 text-sm font-medium text-amber-800">
             O link aparece só agora e vale 60 minutos. Se perder, gere outro: o anterior deixa de valer.
           </p>
@@ -72,7 +87,7 @@ export default function ResetLinkButton({ rota, nome, telefone, className = '' }
           <div className="mt-4 flex flex-wrap gap-2">
             <Button type="button" variant="primary" className="px-4 py-2 text-sm" onClick={copiar}>{copiado ? 'Link copiado' : 'Copiar link'}</Button>
             {fone && (
-              <a href={`https://wa.me/${fone}?text=${encodeURIComponent(mensagem)}`} target="_blank" rel="noopener noreferrer"
+              <a href={urlWhatsApp(fone, nome, dados.link)} target="_blank" rel="noopener noreferrer"
                 className="rounded-full bg-green-600 px-4 py-2 text-sm font-extrabold text-white hover:brightness-110">Enviar pelo WhatsApp</a>
             )}
           </div>

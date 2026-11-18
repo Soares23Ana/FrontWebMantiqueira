@@ -8,6 +8,7 @@ import Logo from '../components/Logo';
 import { FormError } from '../components/State';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
+import { api } from '../api/client';
 import { formatCnpj, isValidCnpj, normalizarCnpj } from '../utils/cnpj';
 
 // Tela única de login, neutra: não diz que existe uma área da equipe. Para o cliente o campo é só de CNPJ (numérico ou
@@ -26,6 +27,11 @@ export default function Login() {
   const [errors, setErrors] = useState({ identificador: '', senha: '' });
   const [formError, setFormError] = useState('');
   const [sending, setSending] = useState(false);
+  const [esqueci, setEsqueci] = useState(false);
+  const [cnpjEsqueci, setCnpjEsqueci] = useState('');
+  const [erroEsqueci, setErroEsqueci] = useState('');
+  const [respostaEsqueci, setRespostaEsqueci] = useState('');
+  const [enviandoEsqueci, setEnviandoEsqueci] = useState(false);
 
   if (user && !sending) return <Navigate to={user.tipo === 'equipe' ? '/gestor' : from ?? '/minha-conta'} replace />;
 
@@ -35,6 +41,24 @@ export default function Login() {
     if (value.includes('@')) return setIdentificador(value.trim());
     const n = normalizarCnpj(value);
     setIdentificador(/^\d*$/.test(n) || n.length >= 14 ? formatCnpj(value) : value);
+  };
+
+  // "Esqueci a senha": o cliente informa o CNPJ e a equipe recebe o pedido (aviso no painel). A resposta é sempre a mesma.
+  const pedirNovaSenha = async () => {
+    setErroEsqueci('');
+    if (!isValidCnpj(cnpjEsqueci)) {
+      setErroEsqueci(cnpjEsqueci.trim() ? 'Informe um CNPJ válido.' : 'Informe o CNPJ da sua empresa.');
+      return;
+    }
+    setEnviandoEsqueci(true);
+    try {
+      const r = await api.post<{ mensagem: string }>('/auth/solicitar-redefinicao', { cnpj: normalizarCnpj(cnpjEsqueci) });
+      setRespostaEsqueci(r.mensagem);
+    } catch (err) {
+      setErroEsqueci(errorMessage(err));
+    } finally {
+      setEnviandoEsqueci(false);
+    }
   };
 
   const submit = async (e: FormEvent) => {
@@ -78,12 +102,38 @@ export default function Login() {
             autoCapitalize="none" spellCheck={false} onChange={(e) => onChange(e.target.value)} error={errors.identificador} />
           <PasswordField label="Senha" value={senha} placeholder="Senha" autoComplete="current-password"
             onChange={(e) => setSenha(e.target.value)} error={errors.senha} />
-          <p className="my-4 text-right text-sm text-muted">
-            Esqueceu a senha? {config?.whatsapp ? (
-              <a href={`https://wa.me/${config.whatsapp}?text=${encodeURIComponent('Olá! Esqueci a senha do site e preciso de um link para criar uma nova senha.')}`}
-                target="_blank" rel="noopener noreferrer" className="font-extrabold text-brand">Fale com a Mantiqueira no WhatsApp</a>
-            ) : 'Fale com a Mantiqueira pelo telefone'}: a equipe envia um link para você criar uma nova senha.
-          </p>
+          <div className="my-4 text-sm text-muted">
+            {!esqueci ? (
+              <p className="text-right">
+                Esqueceu a senha?{' '}
+                <button type="button" onClick={() => setEsqueci(true)} className="font-extrabold text-brand hover:underline">Peça uma nova senha</button>
+              </p>
+            ) : respostaEsqueci ? (
+              <div role="status" className="rounded-xl bg-green-100 p-3 text-green-800">
+                <p className="font-extrabold">{respostaEsqueci}</p>
+                {config?.whatsapp && (
+                  <p className="mt-1">
+                    Se preferir, <a href={`https://wa.me/${config.whatsapp}?text=${encodeURIComponent('Olá! Esqueci a senha do site e preciso de um link para criar uma nova senha.')}`}
+                      target="_blank" rel="noopener noreferrer" className="font-extrabold underline">fale com a Mantiqueira no WhatsApp</a>.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-black/10 p-3">
+                <p className="font-extrabold text-ink">Esqueceu a senha?</p>
+                <p className="mb-1">Informe o CNPJ da sua empresa. A equipe da Mantiqueira recebe o seu pedido e envia um link para você criar uma nova senha.</p>
+                <Field label="CNPJ da empresa" value={cnpjEsqueci} placeholder="00.000.000/0000-00" autoCapitalize="characters" spellCheck={false}
+                  onChange={(e) => setCnpjEsqueci(formatCnpj(e.target.value))} error={erroEsqueci}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void pedirNovaSenha(); } }} />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button type="button" variant="primary" disabled={enviandoEsqueci} onClick={() => void pedirNovaSenha()} className="px-4 py-2 text-sm disabled:opacity-60">
+                    {enviandoEsqueci ? 'Enviando...' : 'Pedir nova senha'}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => { setEsqueci(false); setErroEsqueci(''); }} className="px-4 py-2 text-sm">Cancelar</Button>
+                </div>
+              </div>
+            )}
+          </div>
           <Button variant="primary" type="submit" disabled={sending} className="w-full rounded-lg uppercase disabled:opacity-60">
             {sending ? 'Entrando...' : 'Entrar'}
           </Button>

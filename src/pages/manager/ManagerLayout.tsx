@@ -15,6 +15,8 @@ interface Contadores {
   clientes_novos_7_dias: number;
   /** Carrinhos abandonados que ainda não receberam contato da equipe. */
   carrinhos_abandonados?: number;
+  /** Clientes que pediram nova senha na tela de login e ainda não foram atendidos. */
+  redefinicoes_pendentes?: number;
 }
 
 interface ManagerContext {
@@ -44,7 +46,7 @@ export default function ManagerLayout() {
         { to: '/gestor/pedidos', label: 'Pedidos', icon: 'orders', badge: contadores?.pedidos_pendentes },
         { to: '/gestor/produtos', label: 'Produtos', icon: 'box', badge: contadores?.estoque_baixo },
         { to: '/gestor/importacao', label: 'Importação', icon: 'upload' },
-        { to: '/gestor/clientes', label: 'Clientes', icon: 'users', badge: contadores?.clientes_novos_7_dias },
+        { to: '/gestor/clientes', label: 'Clientes', icon: 'users', badge: contadores?.redefinicoes_pendentes || contadores?.clientes_novos_7_dias },
         { to: '/gestor/carrinhos', label: 'Carrinhos abandonados', icon: 'cart', badge: contadores?.carrinhos_abandonados },
       ],
     },
