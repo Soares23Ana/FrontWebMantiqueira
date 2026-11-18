@@ -10,8 +10,9 @@ import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
 import { formatCnpj, isValidCnpj, normalizarCnpj } from '../utils/cnpj';
 
-// Tela única de login, neutra: não diz que existe uma área da equipe. O mesmo campo aceita CNPJ (numérico ou
-// com letras) ou e-mail; a regra da API é só o "@": com "@" é e-mail, sem "@" é CNPJ.
+// Tela única de login, neutra: não diz que existe uma área da equipe. Para o cliente o campo é só de CNPJ (numérico ou
+// com letras). A equipe continua entrando pelo mesmo campo com o e-mail, sem aparecer na tela: a regra da API é só o
+// "@" (com "@" é e-mail, sem "@" é CNPJ).
 export default function Login() {
   const { user, login, expiredMessage } = useAuth();
   const { config } = useStore();
@@ -41,8 +42,8 @@ export default function Login() {
     const isEmail = identificador.includes('@');
     const next = {
       identificador: !identificador.trim()
-        ? 'Informe seu CNPJ ou e-mail.'
-        : !isEmail && !isValidCnpj(identificador) ? 'Informe um CNPJ válido ou um e-mail.' : '',
+        ? 'Informe seu CNPJ.'
+        : !isEmail && !isValidCnpj(identificador) ? 'Informe um CNPJ válido.' : '',
       senha: senha ? '' : 'Informe sua senha.',
     };
     setErrors(next);
@@ -73,7 +74,7 @@ export default function Login() {
         <form onSubmit={submit} noValidate>
           <h3 className="mb-4 text-xl font-extrabold">Já tem conta? Entre.</h3>
           <FormError message={formError} />
-          <Field label="CNPJ ou e-mail" value={identificador} placeholder="00.000.000/0000-00" autoComplete="username"
+          <Field label="CNPJ" value={identificador} placeholder="00.000.000/0000-00" autoComplete="username"
             autoCapitalize="none" spellCheck={false} onChange={(e) => onChange(e.target.value)} error={errors.identificador} />
           <PasswordField label="Senha" value={senha} placeholder="Senha" autoComplete="current-password"
             onChange={(e) => setSenha(e.target.value)} error={errors.senha} />
