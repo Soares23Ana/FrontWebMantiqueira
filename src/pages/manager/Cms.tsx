@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import { api, ApiError, errorMessage, imageUrl } from '../../api/client';
 import Button from '../../components/Button';
 import Field, { TextAreaField } from '../../components/Field';
@@ -7,7 +7,8 @@ import DestinoFields, { DESTINO_VAZIO, destinoDeApi, destinoParaApi } from '../.
 import type { DestinoValue } from '../../components/manager/DestinoFields';
 import Icon from '../../components/Icon';
 import BannerPreview from '../../components/manager/BannerPreview';
-import ChipFilter from '../../components/manager/ChipFilter';
+import ImagePicker, { MAX_IMAGE_MB, validarImagem } from '../../components/manager/ImagePicker';
+import UnderlineTabs from '../../components/manager/UnderlineTabs';
 import IconButton from '../../components/manager/IconButton';
 import Modal from '../../components/manager/Modal';
 import SectionHeader from '../../components/manager/SectionHeader';
@@ -15,21 +16,32 @@ import Toggle from '../../components/manager/Toggle';
 import { ErrorState, FormError, Loading } from '../../components/State';
 import { useToast } from '../../context/ToastContext';
 import { useApi } from '../../hooks/useApi';
-import { formatDateTime, formatPhone, toLocalInput } from '../../utils/format';
-import type { Banner, BlocoCms, Configuracao, Destino, SituacaoBanner } from '../../types';
+import { formatDateTime, toLocalInput } from '../../utils/format';
+import type { Banner, BlocoCms, Destino, SituacaoBanner } from '../../types';
 
-const tabs = ['Banners', 'Pop-up', 'Blocos de texto', 'Contatos e avisos'] as const;
+type Aba = 'Banners' | 'Pop-up' | 'Blocos de texto';
+
+// A aba "Blocos de texto" fica escondida: o site público ainda não tem página que exiba esses blocos.
+// O código continua aqui; para reativar, troque para true (ver o README).
+const MOSTRAR_BLOCOS: boolean = false;
+const ABAS: Aba[] = MOSTRAR_BLOCOS ? ['Banners', 'Pop-up', 'Blocos de texto'] : ['Banners', 'Pop-up'];
 
 export default function Cms() {
-  const [tab, setTab] = useState<(typeof tabs)[number]>('Banners');
+  const [tab, setTab] = useState<Aba>('Banners');
   return (
     <>
-      <SectionHeader title="Conteúdo (CMS)" subtitle="Banners e pop-up da página inicial, blocos de texto e dados de contato do site." />
-      <div className="mb-5"><ChipFilter label="Seção" options={tabs} value={tab} onChange={setTab} /></div>
-      {tab === 'Banners' && <Banners />}
-      {tab === 'Pop-up' && <PopupTab />}
-      {tab === 'Blocos de texto' && <Blocks />}
-      {tab === 'Contatos e avisos' && <Settings />}
+      <SectionHeader title="Conteúdo (CMS)" subtitle="Banners e pop-up da página inicial">
+        <a href={import.meta.env.BASE_URL} target="_blank" rel="noopener noreferrer"
+          className="rounded-full px-3 py-2 text-sm font-medium text-brand underline hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+          Ver como fica na loja
+        </a>
+      </SectionHeader>
+      <div className="mb-4"><UnderlineTabs tabs={ABAS} value={tab} onChange={setTab} label="Seção" idPrefix="cms-aba" panelId="painel-cms" /></div>
+      <div role="tabpanel" id="painel-cms">
+        {tab === 'Banners' && <Banners />}
+        {tab === 'Pop-up' && <PopupTab />}
+        {MOSTRAR_BLOCOS && tab === 'Blocos de texto' && <Blocks />}
+      </div>
     </>
   );
 }
@@ -95,31 +107,40 @@ function Banners() {
       {loading && !loaded && <Loading className="py-6" />}
       {error && <ErrorState error={error} onRetry={reload} className="py-6" />}
       {data && banners.length === 0 && <p className="py-6 text-center text-muted">Nenhum banner cadastrado.</p>}
+      {data && banners.length > 0 && !banners.some((b) => b.situacao === 'no_ar') && (
+        <p role="status" className="mb-4 rounded-xl bg-amber-100 px-4 py-3 text-sm text-amber-800">
+          Nenhum banner está no ar. A página inicial mostra a abertura padrão. Ative um banner e escolha para onde ele leva.
+        </p>
+      )}
       <ul className="grid gap-3">
         {banners.map((b, i) => (
           <li key={b.id_banner} className={`flex flex-wrap items-center gap-3 rounded-xl border border-black/10 p-3 ${b.situacao === 'no_ar' ? '' : 'opacity-70'}`}>
-            <BannerPreview title={b.titulo} image={imageUrl(b.imagem_url)} className="aspect-[1920/700] w-40 shrink-0" />
+            <BannerPreview title={b.titulo} image={imageUrl(b.imagem_url)} className="aspect-[1920/700] w-40 shrink-0 sm:w-48" />
             <div className="min-w-40 flex-1">
               <p className="font-medium">{b.titulo}</p>
-              <p className="truncate text-sm text-muted">{b.destino?.link ?? b.link ?? 'Sem destino'}</p>
+              <p className={`truncate text-sm ${textoDestino(b).temDestino ? 'font-medium text-ink' : 'text-muted'}`}>{textoDestino(b).texto}</p>
               <p className="text-xs text-muted">
                 <span className={`mr-2 rounded-full px-2 py-0.5 font-medium ${SITUACAO[b.situacao][1]}`}>{SITUACAO[b.situacao][0]}</span>
                 {b.inicio_em || b.fim_em ? `${b.inicio_em ? formatDateTime(b.inicio_em) : '…'} até ${b.fim_em ? formatDateTime(b.fim_em) : '…'}` : 'Sem período'}
               </p>
             </div>
-            <div className="flex items-center">
+            <div className="flex flex-wrap items-center gap-2">
               <Toggle checked={b.ativo} label={`Ativar ${b.titulo}`} onChange={(v) => toggle(b, v)} />
-              <IconButton icon="up" label="Mover para cima" disabled={i === 0} onClick={() => move(i, -1)} />
-              <IconButton icon="down" label="Mover para baixo" disabled={i === banners.length - 1} onClick={() => move(i, 1)} />
-              <IconButton icon="edit" label="Editar" onClick={() => setEditing(b)} />
-              {confirmId === b.id_banner ? (
-                <span className="ml-1 flex items-center gap-1">
-                  <Button variant="accent" className="px-3 py-1 text-sm" onClick={() => remove(b)}>Excluir</Button>
-                  <Button variant="ghost" className="px-3 py-1 text-sm" onClick={() => setConfirmId(null)}>Não</Button>
-                </span>
-              ) : (
-                <IconButton icon="trash" label="Excluir" danger onClick={() => setConfirmId(b.id_banner)} />
-              )}
+              <div role="group" aria-label={`Ordem de ${b.titulo}`} className="flex items-center rounded-full bg-surface">
+                <IconButton icon="up" label={`Subir ${b.titulo}`} disabled={i === 0} onClick={() => move(i, -1)} />
+                <IconButton icon="down" label={`Descer ${b.titulo}`} disabled={i === banners.length - 1} onClick={() => move(i, 1)} />
+              </div>
+              <div className="flex items-center border-l border-black/10 pl-2">
+                <IconButton icon="edit" label={`Editar ${b.titulo}`} onClick={() => setEditing(b)} />
+                {confirmId === b.id_banner ? (
+                  <span className="ml-1 flex items-center gap-1">
+                    <Button variant="accent" className="px-3 py-1 text-sm" onClick={() => remove(b)}>Excluir</Button>
+                    <Button variant="ghost" className="px-3 py-1 text-sm" onClick={() => setConfirmId(null)}>Não</Button>
+                  </span>
+                ) : (
+                  <IconButton icon="trash" label={`Excluir ${b.titulo}`} danger="hover" onClick={() => setConfirmId(b.id_banner)} />
+                )}
+              </div>
             </div>
           </li>
         ))}
@@ -129,8 +150,28 @@ function Banners() {
   );
 }
 
-const MAX_MB = 5;
-const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const BANNER_PROPORCAO = 1920 / 700;
+
+/** Lê a largura e a altura da imagem no navegador (nada é enviado). */
+function lerDimensoes(url: string): Promise<{ w: number; h: number } | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth || img.width, h: img.naturalHeight || img.height });
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+const TIPO_DESTINO_ROTULO: Record<string, string> = { produto: 'Produto', categoria: 'Categoria', marca: 'Marca', campanha: 'Campanha', link: 'Link' };
+
+/** Texto do destino na linha do banner: "Abre: Categoria · /categoria/higiene" ou "Sem destino (não clicável)". */
+function textoDestino(b: Banner): { texto: string; temDestino: boolean } {
+  const tipo = b.tipo_destino ?? b.destino?.tipo;
+  const link = b.destino?.link ?? b.link;
+  if (tipo === 'nenhum' || (!tipo && !link)) return { texto: 'Sem destino (não clicável)', temDestino: false };
+  const rotulo = tipo ? TIPO_DESTINO_ROTULO[tipo] : undefined;
+  return { texto: `Abre: ${[rotulo, link].filter(Boolean).join(' · ')}`, temDestino: true };
+}
 
 function BannerFormModal({ banner, onClose, onSaved }: { banner: Banner | null; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
@@ -145,18 +186,23 @@ function BannerFormModal({ banner, onClose, onSaved }: { banner: Banner | null; 
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const onFile = (e: ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (!ACCEPTED.includes(f.type)) return setErrors((p) => ({ ...p, imagem: 'Use uma imagem PNG, JPG, WEBP ou GIF.' }));
-    if (f.size > MAX_MB * 1024 * 1024) return setErrors((p) => ({ ...p, imagem: `A imagem deve ter até ${MAX_MB} MB.` }));
-    setErrors((p) => ({ ...p, imagem: '' }));
+  const [avisoProporcao, setAvisoProporcao] = useState(false);
+
+  const onPick = async (f: File) => {
+    const msg = validarImagem(f);
+    setErrors((p) => ({ ...p, imagem: msg }));
+    if (msg) return;
+    const url = URL.createObjectURL(f);
     setFile(f);
-    setPreview(URL.createObjectURL(f));
+    setPreview(url);
+    // Aviso que não bloqueia: proporção mais de 10% diferente de 1920 × 700.
+    const dim = await lerDimensoes(url);
+    setAvisoProporcao(!!dim && dim.h > 0 && Math.abs(dim.w / dim.h / BANNER_PROPORCAO - 1) > 0.1);
   };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (inicio && fim && fim <= inicio) return setErrors({ fim_em: 'O fim deve ser depois do início.' });
     if (!banner && !file) return setErrors({ imagem: 'Escolha a imagem do banner.' });
     setSaving(true);
     setFormError('');
@@ -188,16 +234,18 @@ function BannerFormModal({ banner, onClose, onSaved }: { banner: Banner | null; 
         <FormError message={formError} />
         <Field label="Título" value={titulo} onChange={(e) => setTitulo(e.target.value)} error={errors.titulo} />
         <DestinoFields value={destino} onChange={setDestino} errors={errors} />
-        <div className="grid gap-x-3 sm:grid-cols-2">
-          <Field label="Início (Brasília)" mandatory={false} type="datetime-local" value={inicio} onChange={(e) => setInicio(e.target.value)} error={errors.inicio_em} />
-          <Field label="Fim (Brasília)" mandatory={false} type="datetime-local" value={fim} onChange={(e) => setFim(e.target.value)} error={errors.fim_em} />
+        <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <Field className="min-w-0" label="Início (Brasília)" mandatory={false} type="datetime-local" value={inicio} onChange={(e) => setInicio(e.target.value)} error={errors.inicio_em} />
+          <Field className="min-w-0" label="Fim (Brasília)" mandatory={false} type="datetime-local" value={fim} onChange={(e) => setFim(e.target.value)} error={errors.fim_em} />
         </div>
         <label className="mt-3 flex items-center gap-2 text-sm"><Toggle checked={ativo} label="Banner ativo" onChange={setAtivo} /> Ativo</label>
         <div className="mt-3 grid gap-1.5 text-muted">
-          <span>Imagem (1920 × 700 px, até {MAX_MB} MB) {!banner && <b className="text-accent">*</b>}</span>
+          <span>Imagem (1920 × 700 px, até {MAX_IMAGE_MB} MB) {!banner && <b className="text-accent">*</b>}</span>
           <BannerPreview title={titulo || 'Pré-visualização'} image={preview} className="aspect-[1920/700] w-full" />
-          <input type="file" accept={ACCEPTED.join(',')} onChange={onFile} aria-label="Escolher imagem"
-            className="text-sm file:mr-3 file:rounded-full file:border-0 file:bg-surface file:px-4 file:py-2 file:font-medium file:text-ink hover:file:bg-black/10" />
+          <ImagePicker ariaLabel="Escolher imagem" fileName={file?.name} onPick={onPick} />
+          {avisoProporcao && (
+            <p role="status" className="rounded-xl bg-amber-100 px-3 py-2 text-sm text-amber-800">Esta imagem tem proporção diferente de 1920 × 700 e será recortada no site.</p>
+          )}
           {errors.imagem && <small role="alert" className="text-accent">{errors.imagem}</small>}
         </div>
         <div className="mt-6 flex justify-end gap-2">
@@ -222,6 +270,51 @@ interface PopupBloco {
 }
 
 // Pop-up da página inicial (bloco "popup"): título, texto, imagem, destino do botão e janela de exibição.
+type SituacaoPopup = 'desligado' | 'agendado' | 'expirado' | 'no_ar';
+
+// Mesma regra dos banners: desligado vence; depois a janela de datas.
+export function situacaoPopup(p: { ativo: boolean; inicio_em: string | null; fim_em: string | null }, agora = new Date()): SituacaoPopup {
+  if (!p.ativo) return 'desligado';
+  if (p.inicio_em && new Date(p.inicio_em) > agora) return 'agendado';
+  if (p.fim_em && new Date(p.fim_em) < agora) return 'expirado';
+  return 'no_ar';
+}
+
+const SITUACAO_POPUP: Record<SituacaoPopup, [string, string]> = {
+  desligado: ['Desligado', 'bg-black/10 text-muted'],
+  agendado: ['Agendado', 'bg-brand/10 text-brand'],
+  expirado: ['Expirado', 'bg-black/10 text-muted'],
+  no_ar: ['No ar', 'bg-green-100 text-green-800'],
+};
+
+function fraseSituacao(s: SituacaoPopup, p: { inicio_em: string | null; fim_em: string | null }) {
+  if (s === 'agendado') return `Começa em ${formatDateTime(p.inicio_em)}`;
+  if (s === 'expirado') return `Encerrou em ${formatDateTime(p.fim_em)}`;
+  if (s === 'no_ar') return p.fim_em ? `No ar até ${formatDateTime(p.fim_em)}` : 'No ar, sem data para acabar';
+  return 'Não aparece na loja enquanto estiver desligado.';
+}
+
+function Contador({ n, max }: { n: number; max: number }) {
+  return <p className="mt-1 text-right text-xs text-muted">{n}/{max}</p>;
+}
+
+// Como o pop-up aparece na loja (mesmo estilo de src/components/PopupCms.tsx), atualizado enquanto a pessoa digita.
+function PopupPreview({ titulo, texto, imagem, temDestino }: { titulo: string; texto: string; imagem: string; temDestino: boolean }) {
+  return (
+    <section aria-label="Pré-visualização do pop-up" className="rounded-2xl bg-black/5 p-4">
+      <h4 className="mb-3 text-sm font-extrabold text-muted">Pré-visualização</h4>
+      <div className="mx-auto w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
+        {imagem && <img src={imagem} alt="" className="max-h-64 w-full object-cover" />}
+        <div className="p-6 text-center">
+          <h2 className={`text-2xl font-extrabold ${titulo.trim() ? '' : 'text-muted'}`}>{titulo.trim() || 'Título do pop-up'}</h2>
+          {texto.trim() && <p className="mt-2 whitespace-pre-line text-muted">{texto}</p>}
+          {temDestino && <span className="mt-5 inline-block rounded-full bg-accent px-6 py-3 font-extrabold text-white">Ver agora</span>}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PopupTab() {
   const toast = useToast();
   const { data, loading, loaded, error, reload } = useApi(async () => {
@@ -239,25 +332,43 @@ function PopupTab() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+
+  // Valores salvos (ou o formulário vazio, se ainda não existe pop-up): base para "Salvar" e "Descartar".
+  const salvo = {
+    titulo: data?.titulo ?? '',
+    texto: data?.conteudo ?? '',
+    destino: data ? destinoDeApi(data.destino.tipo, data.destino.id, data.destino.link) : DESTINO_VAZIO,
+    inicio: toLocalInput(data?.inicio_em),
+    fim: toLocalInput(data?.fim_em),
+    imagem: data?.imagem_url ? imageUrl(data.imagem_url) : '',
+  };
+  const restaurar = () => {
+    setTitulo(salvo.titulo);
+    setTexto(salvo.texto);
+    setDestino(salvo.destino);
+    setInicio(salvo.inicio);
+    setFim(salvo.fim);
+    setAtivo(data?.ativo ?? true);
+    setPreview(salvo.imagem);
+    setFile(null);
+    setErrors({});
+    setFormError('');
+  };
 
   useEffect(() => {
     if (data === undefined) return;
-    setTitulo(data?.titulo ?? '');
-    setTexto(data?.conteudo ?? '');
-    setDestino(data ? destinoDeApi(data.destino.tipo, data.destino.id, data.destino.link) : DESTINO_VAZIO);
-    setInicio(toLocalInput(data?.inicio_em));
-    setFim(toLocalInput(data?.fim_em));
-    setAtivo(data?.ativo ?? true);
-    setPreview(data?.imagem_url ? imageUrl(data.imagem_url) : '');
-    setFile(null);
+    restaurar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
-  const onFile = (e: ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (!ACCEPTED.includes(f.type)) return setErrors((p) => ({ ...p, imagem: 'Use uma imagem PNG, JPG, WEBP ou GIF.' }));
-    if (f.size > MAX_MB * 1024 * 1024) return setErrors((p) => ({ ...p, imagem: `A imagem deve ter até ${MAX_MB} MB.` }));
-    setErrors((p) => ({ ...p, imagem: '' }));
+  const alterado = !!file || titulo !== salvo.titulo || texto !== salvo.texto || inicio !== salvo.inicio || fim !== salvo.fim
+    || JSON.stringify(destino) !== JSON.stringify(salvo.destino) || (!data && !ativo);
+
+  const onPick = (f: File) => {
+    const msg = validarImagem(f);
+    setErrors((p) => ({ ...p, imagem: msg }));
+    if (msg) return;
     setFile(f);
     setPreview(URL.createObjectURL(f));
   };
@@ -292,6 +403,7 @@ function PopupTab() {
   };
 
   const toggle = async (v: boolean) => {
+    if (!data) return setAtivo(v); // ainda não existe: define o estado inicial, que vai junto no "Salvar pop-up"
     try {
       await api.patch('/cms/blocos/popup', { ativo: v });
       toast(v ? 'Pop-up ligado.' : 'Pop-up desligado.');
@@ -302,54 +414,76 @@ function PopupTab() {
   };
 
   const remove = async () => {
-    if (!confirm('Excluir o pop-up e a imagem dele?')) return;
     try {
       await api.del('/cms/blocos/popup');
       toast('Pop-up excluído.');
+      setConfirmando(false);
       reload();
     } catch (err) {
       toast(errorMessage(err), 'error');
     }
   };
 
+  const situ = data ? situacaoPopup(data) : null;
+
   return (
     <div className="rounded-2xl border border-black/10 bg-white p-5">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="font-extrabold">Pop-up da página inicial</h3>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-extrabold">Pop-up da página inicial</h3>
+            {loaded && (situ ? (
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SITUACAO_POPUP[situ][1]}`}>{SITUACAO_POPUP[situ][0]}</span>
+            ) : (
+              <span className="text-xs text-muted">Nenhum pop-up cadastrado</span>
+            ))}
+          </div>
           <p className="text-sm text-muted">Aparece uma vez por visita na home, dentro da janela de datas, enquanto estiver ligado.</p>
+          {data && situ && <p className="text-xs text-muted">{fraseSituacao(situ, data)}</p>}
         </div>
-        {data && (
-          <div className="flex items-center gap-3 text-sm">
-            <label className="flex items-center gap-2"><Toggle checked={data.ativo} label="Pop-up ligado" onChange={toggle} /> Ligado</label>
-            <IconButton icon="trash" label="Excluir pop-up" danger onClick={remove} />
+        {loaded && (
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <label className="flex items-center gap-2"><Toggle checked={data ? data.ativo : ativo} label="Pop-up ligado" onChange={toggle} /> Ligado</label>
+            {data && (confirmando ? (
+              <span role="group" aria-label="Confirmar exclusão do pop-up" className="flex flex-wrap items-center gap-2">
+                <span>Excluir o pop-up e a imagem dele?</span>
+                <Button variant="accent" className="px-3 py-1 text-sm" onClick={remove}>Sim, excluir</Button>
+                <Button variant="ghost" className="px-3 py-1 text-sm" onClick={() => setConfirmando(false)}>Não</Button>
+              </span>
+            ) : (
+              <IconButton icon="trash" label="Excluir pop-up" danger="hover" onClick={() => setConfirmando(true)} />
+            ))}
           </div>
         )}
       </div>
       {loading && !loaded && <Loading className="py-6" />}
       {error && <ErrorState error={error} onRetry={reload} className="py-6" />}
       {(!loading || loaded) && !error && (
-        <form onSubmit={submit} noValidate className="max-w-xl">
-          <FormError message={formError} />
-          <Field label="Título" maxLength={150} value={titulo} onChange={(e) => setTitulo(e.target.value)} error={errors.titulo} />
-          <TextAreaField label="Texto" maxLength={2000} value={texto} onChange={(e) => setTexto(e.target.value)} error={errors.texto} />
-          <DestinoFields value={destino} onChange={setDestino} errors={errors} />
-          <div className="grid gap-x-3 sm:grid-cols-2">
-            <Field label="Início (Brasília)" mandatory={false} type="datetime-local" value={inicio} onChange={(e) => setInicio(e.target.value)} error={errors.inicio_em} />
-            <Field label="Fim (Brasília)" mandatory={false} type="datetime-local" value={fim} onChange={(e) => setFim(e.target.value)} error={errors.fim_em} />
-          </div>
-          {!data && <label className="mt-3 flex items-center gap-2 text-sm"><Toggle checked={ativo} label="Pop-up ligado" onChange={setAtivo} /> Ligado ao salvar</label>}
-          <div className="mt-3 grid gap-1.5 text-muted">
-            <span>Imagem (opcional, até {MAX_MB} MB)</span>
-            {preview && <img src={preview} alt="" className="max-h-40 w-auto rounded-xl border border-black/10 object-contain" />}
-            <input type="file" accept={ACCEPTED.join(',')} onChange={onFile} aria-label="Escolher imagem do pop-up"
-              className="text-sm file:mr-3 file:rounded-full file:border-0 file:bg-surface file:px-4 file:py-2 file:font-medium file:text-ink hover:file:bg-black/10" />
-            {errors.imagem && <small role="alert" className="text-accent">{errors.imagem}</small>}
-          </div>
-          <div className="mt-6 flex justify-end">
-            <Button type="submit" variant="primary" disabled={saving}>{saving ? 'Salvando...' : 'Salvar pop-up'}</Button>
-          </div>
-        </form>
+        <div className="mt-3 grid items-start gap-6 lg:grid-cols-2">
+          <form onSubmit={submit} noValidate className="min-w-0">
+            <FormError message={formError} />
+            <Field label="Título" maxLength={150} value={titulo} onChange={(e) => setTitulo(e.target.value)} error={errors.titulo} />
+            <Contador n={titulo.length} max={150} />
+            <TextAreaField label="Texto" maxLength={2000} value={texto} onChange={(e) => setTexto(e.target.value)} error={errors.texto} />
+            <Contador n={texto.length} max={2000} />
+            <DestinoFields value={destino} onChange={setDestino} errors={errors} />
+            <div className="grid grid-cols-1 gap-x-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <Field className="min-w-0" label="Início (Brasília)" mandatory={false} type="datetime-local" value={inicio} onChange={(e) => setInicio(e.target.value)} error={errors.inicio_em} />
+              <Field className="min-w-0" label="Fim (Brasília)" mandatory={false} type="datetime-local" value={fim} onChange={(e) => setFim(e.target.value)} error={errors.fim_em} />
+            </div>
+            <div className="mt-3 grid gap-1.5 text-muted">
+              <span>Imagem (opcional, até {MAX_IMAGE_MB} MB)</span>
+              <ImagePicker ariaLabel="Escolher imagem do pop-up" fileName={file?.name} onPick={onPick} />
+              {data?.imagem_url && <small>Você pode trocar a imagem. Para ficar sem imagem, exclua o pop-up e crie de novo.</small>}
+              {errors.imagem && <small role="alert" className="text-accent">{errors.imagem}</small>}
+            </div>
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              {alterado && <Button type="button" variant="ghost" onClick={restaurar}>Descartar alterações</Button>}
+              <Button type="submit" variant="primary" disabled={saving || !alterado} className="disabled:opacity-40">{saving ? 'Salvando...' : 'Salvar pop-up'}</Button>
+            </div>
+          </form>
+          <PopupPreview titulo={titulo} texto={texto} imagem={preview} temDestino={destino.tipo !== 'nenhum'} />
+        </div>
       )}
     </div>
   );
@@ -456,60 +590,5 @@ function BlockModal({ bloco, onClose, onSaved }: { bloco: BlocoCms | null; onClo
         </div>
       </form>
     </Modal>
-  );
-}
-
-// ---------- Configurações ----------
-const LABELS: Record<string, { label: string; placeholder?: string; hint?: string }> = {
-  whatsapp: { label: 'WhatsApp', placeholder: '5519996727161', hint: 'Com DDI e DDD, só números. Mostra o botão flutuante no site.' },
-  telefone_contato: { label: 'Telefone de contato', placeholder: '(19) 3638-1010' },
-  email_contato: { label: 'E-mail de contato', placeholder: 'ecommerce@dmantiqueira.com.br' },
-  horario_atendimento: { label: 'Horário de atendimento', placeholder: 'Seg a sex, das 7h45 às 18h00' },
-  aviso_topo: { label: 'Aviso do topo', placeholder: 'Ex.: Entregas normais no feriado', hint: 'Faixa exibida acima do cabeçalho da loja. Deixe vazio para esconder.' },
-  meta_reposicao: { label: 'Meta de reposição (unidades)', hint: 'Usada nos alertas de reposição do painel.' },
-};
-
-function Settings() {
-  const { data, loading, error, reload } = useApi(() => api.get<{ configuracoes: Configuracao[] }>('/configuracoes'), []);
-  if (loading) return <Loading />;
-  if (error) return <ErrorState error={error} onRetry={reload} />;
-  return (
-    <div className="grid gap-3 rounded-2xl border border-black/10 bg-white p-5">
-      <p className="text-sm text-muted">Cada campo é salvo separadamente. As informações públicas aparecem no rodapé, no botão de WhatsApp e no aviso do topo.</p>
-      {data!.configuracoes.map((c) => <SettingRow key={c.chave} config={c} />)}
-    </div>
-  );
-}
-
-function SettingRow({ config }: { config: Configuracao }) {
-  const toast = useToast();
-  const meta = LABELS[config.chave] ?? { label: config.chave };
-  const initial = config.valor == null ? '' : config.chave === 'telefone_contato' ? formatPhone(String(config.valor)) : String(config.valor);
-  const [value, setValue] = useState(initial);
-  const [saved, setSaved] = useState(initial);
-  const [err, setErr] = useState('');
-  useEffect(() => setErr(''), [value]);
-
-  const save = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      const v = value.trim();
-      await api.put(`/configuracoes/${config.chave}`, { valor: v === '' ? null : config.chave === 'meta_reposicao' ? Number(v) : v });
-      setSaved(value);
-      toast(`${meta.label} salvo.`);
-    } catch (e2) {
-      setErr(errorMessage(e2));
-    }
-  };
-
-  return (
-    <form onSubmit={save} className="grid items-end gap-2 border-t border-black/10 pt-3 first:border-0 sm:grid-cols-[minmax(0,1fr)_auto]">
-      <div>
-        <Field label={meta.label} mandatory={false} value={value} placeholder={meta.placeholder} error={err}
-          type={config.chave === 'meta_reposicao' ? 'number' : 'text'} onChange={(e) => setValue(e.target.value)} />
-        <p className="mt-1 text-xs text-muted">{meta.hint ?? config.descricao}{config.publica ? ' · público' : ' · interno'}</p>
-      </div>
-      <Button type="submit" variant="primary" disabled={value === saved} className="mb-6 px-4 py-2 text-sm disabled:opacity-40">Salvar</Button>
-    </form>
   );
 }

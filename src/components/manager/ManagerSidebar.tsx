@@ -7,6 +7,8 @@ export interface SidebarItem {
   label: string;
   icon: IconName;
   badge?: number;
+  /** Texto para leitor de tela e dica ao passar o mouse sobre o selo (ex.: "2 pedidos de nova senha"). */
+  badgeLabel?: string;
 }
 
 interface Props {
@@ -27,7 +29,7 @@ export default function ManagerSidebar({ groups }: Props) {
                 <Icon name={item.icon} className="h-5 w-5 shrink-0" />
                 <span className="min-w-0 flex-1 leading-tight">{item.label}</span>
                 {!!item.badge && item.badge > 0 && (
-                  <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-accent px-1.5 text-xs font-extrabold text-white">{item.badge}</span>
+                  <span {...(item.badgeLabel ? { role: 'img', 'aria-label': item.badgeLabel, title: item.badgeLabel } : {})} className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-accent px-1.5 text-xs font-extrabold text-white">{item.badge}</span>
                 )}
               </NavLink>
             ))}

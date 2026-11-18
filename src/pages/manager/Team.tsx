@@ -59,7 +59,6 @@ export default function Team() {
                   onChange={(v) => patch(u, { ativo: v }, v ? `${u.nome} reativado.` : `${u.nome} desativado: perdeu o acesso.`)} />}</td>
                 <td className="px-4 text-right">
                   <div className="flex items-center justify-end gap-1">
-                    {!me && u.ativo && <ResetLinkButton rota={`/admin/usuarios/${u.id_usuario}/redefinicao-senha`} nome={u.nome} telefone={u.telefone} className="px-3 py-1.5" />}
                     <IconButton icon="edit" label="Editar" onClick={() => setEditing(u)} />
                   </div>
                 </td>
@@ -68,12 +67,12 @@ export default function Team() {
           })}
         </TableCard>
       )}
-      {editing && <MemberModal membro={editing === 'novo' ? null : editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload(); }} />}
+      {editing && <MemberModal membro={editing === 'novo' ? null : editing} souEu={editing !== 'novo' && editing.id_usuario === user?.id} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload(); }} />}
     </>
   );
 }
 
-function MemberModal({ membro, onClose, onSaved }: { membro: MembroEquipe | null; onClose: () => void; onSaved: () => void }) {
+function MemberModal({ membro, souEu, onClose, onSaved }: { membro: MembroEquipe | null; souEu: boolean; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const [form, setForm] = useState({ nome: membro?.nome ?? '', email: membro?.email ?? '', cargo: membro?.cargo ?? '', telefone: formatPhone(membro?.telefone), senha: '' });
   const [gerencia, setGerencia] = useState(membro?.pode_gerenciar_equipe ?? false);
@@ -109,6 +108,18 @@ function MemberModal({ membro, onClose, onSaved }: { membro: MembroEquipe | null
           <Field label="Cargo" mandatory={false} placeholder="Ex.: Estoquista" value={form.cargo} onChange={set('cargo')} error={errors.cargo} />
           <Field label="Telefone" mandatory={false} value={form.telefone} onChange={set('telefone')} error={errors.telefone} />
         </div>
+        {membro && (souEu ? (
+          <p className="mt-4 rounded-2xl border border-black/10 p-4 text-sm text-muted">Para trocar a sua própria senha, use Minha conta. Se a esqueceu, outro gestor gera o link, ou o servidor usa o comando de recuperação.</p>
+        ) : !membro.ativo ? (
+          <p className="mt-4 rounded-2xl border border-black/10 p-4 text-sm text-muted">Reative o usuário para gerar um link de redefinição.</p>
+        ) : (
+          <div className="mt-4 rounded-2xl border border-black/10 p-4">
+            <h4 className="font-extrabold">Redefinição de senha por link <span className="ml-1 rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">recomendado</span></h4>
+            <p className="mb-3 text-sm text-muted">Para quem esqueceu a senha. Confirme quem é pelo WhatsApp, gere o link e envie: a própria pessoa escolhe a nova senha e a equipe não fica sabendo dela.</p>
+            <ResetLinkButton rota={`/admin/usuarios/${membro.id_usuario}/redefinicao-senha`} nome={membro.nome} telefone={membro.telefone} />
+            {form.telefone !== formatPhone(membro.telefone) && <p className="mt-2 text-xs text-muted">Salve as alterações para usar o novo telefone no WhatsApp.</p>}
+          </div>
+        ))}
         <p className="mt-3 rounded-xl bg-amber-100 p-2 text-sm text-amber-800">A equipe passa a conhecer a senha digitada aqui. Prefira o link de redefinição.</p>
         <PasswordField label={membro ? 'Nova senha (deixe vazio para manter)' : 'Senha (8 a 72 caracteres)'} mandatory={!membro}
           autoComplete="new-password" value={form.senha} onChange={set('senha')} error={errors.senha} />

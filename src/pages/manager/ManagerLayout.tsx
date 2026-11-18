@@ -7,9 +7,12 @@ import ThemeToggle from '../../components/ThemeToggle';
 import ManagerSidebar from '../../components/manager/ManagerSidebar';
 import type { SidebarItem } from '../../components/manager/ManagerSidebar';
 import { useAuth } from '../../context/AuthContext';
+import { seloClientes } from './clientesBadge';
 
 interface Contadores {
   pedidos_pendentes: number;
+  /** Pedidos que a equipe ainda não abriu (selo do menu). Ausente = nenhum novo. */
+  pedidos_novos?: number;
   estoque_baixo: number;
   /** Clientes cadastrados nos últimos 7 dias (só informativo: não há aprovação de cadastro). */
   clientes_novos_7_dias: number;
@@ -38,15 +41,17 @@ export default function ManagerLayout() {
     api.get<Contadores>('/painel/contadores').then(setContadores).catch(() => {});
   }, [location.pathname, tick]);
 
+  const selo = seloClientes(contadores?.redefinicoes_pendentes, contadores?.clientes_novos_7_dias);
+
   const groups: { title: string; items: SidebarItem[] }[] = [
     {
       title: 'Operação',
       items: [
         { to: '/gestor', label: 'Painel', icon: 'dashboard' },
-        { to: '/gestor/pedidos', label: 'Pedidos', icon: 'orders', badge: contadores?.pedidos_pendentes },
+        { to: '/gestor/pedidos', label: 'Pedidos', icon: 'orders', badge: contadores?.pedidos_novos },
         { to: '/gestor/produtos', label: 'Produtos', icon: 'box', badge: contadores?.estoque_baixo },
         { to: '/gestor/importacao', label: 'Importação', icon: 'upload' },
-        { to: '/gestor/clientes', label: 'Clientes', icon: 'users', badge: contadores?.redefinicoes_pendentes || contadores?.clientes_novos_7_dias },
+        { to: '/gestor/clientes', label: 'Clientes', icon: 'users', badge: selo.total, badgeLabel: selo.texto },
         { to: '/gestor/carrinhos', label: 'Carrinhos abandonados', icon: 'cart', badge: contadores?.carrinhos_abandonados },
       ],
     },
@@ -62,6 +67,8 @@ export default function ManagerLayout() {
       title: 'Sistema',
       items: [
         ...(user?.pode_gerenciar_equipe ? [{ to: '/gestor/equipe', label: 'Equipe', icon: 'shield' as const }] : []),
+        { to: '/gestor/atividade', label: 'Atividade da equipe', icon: 'history' },
+        { to: '/gestor/configuracoes', label: 'Configurações', icon: 'sliders' },
         { to: '/gestor/saude', label: 'Saúde do sistema', icon: 'pulse' },
       ],
     },
@@ -69,10 +76,9 @@ export default function ManagerLayout() {
 
   return (
     <div className="min-h-screen bg-surface font-sans text-ink">
-      <header className="sticky top-0 z-20 border-b border-black/10 bg-white">
+      <header aria-label="Área do gestor" className="sticky top-0 z-20 border-b border-black/10 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-2">
           <Link to="/gestor" aria-label="Painel do gestor"><Logo className="h-11" /></Link>
-          <span className="rounded-full bg-brand/10 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-brand">Gestor</span>
           <div className="ml-auto flex items-center gap-2 text-sm">
             <span className="hidden text-muted sm:inline">{user?.nome}</span>
             <ThemeToggle />

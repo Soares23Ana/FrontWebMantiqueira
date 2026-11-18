@@ -14,7 +14,7 @@ vi.mock('../components/Logo', () => ({ default: () => null }));
 import { api, ApiError } from '../api/client';
 import Login from './Login';
 
-const MENSAGEM = 'Pedido recebido. Se o CNPJ estiver cadastrado, a equipe vai entrar em contato em breve.';
+const MENSAGEM = 'Se o CNPJ estiver cadastrado, a equipe da Mantiqueira vai entrar em contato pelo WhatsApp para enviar o link.';
 
 function abrir() {
   render(<MemoryRouter><Login /></MemoryRouter>);
@@ -55,7 +55,7 @@ describe('Login: "Esqueci a senha" pede o CNPJ e avisa a equipe', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pedir nova senha' }));
 
     expect(await screen.findByText(MENSAGEM)).toBeInTheDocument();
-    expect(api.post).toHaveBeenCalledWith('/auth/solicitar-redefinicao', { cnpj: '11222333000181' });
+    expect(api.post).toHaveBeenCalledWith('/auth/redefinicao-senha/solicitar', { documento: '11222333000181' });
     expect(screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/5519982224290\?text=/);
   });
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, ApiError, errorMessage, fetchAllPages, imageUrl } from '../../api/client';
@@ -6,12 +7,11 @@ import Availability from '../../components/Availability';
 import Button from '../../components/Button';
 import Field, { SelectField, TextAreaField } from '../../components/Field';
 import Icon from '../../components/Icon';
-import ChipFilter from '../../components/manager/ChipFilter';
+import UnderlineTabs from '../../components/manager/UnderlineTabs';
 import IconButton from '../../components/manager/IconButton';
 import Modal from '../../components/manager/Modal';
 import Pagination from '../../components/manager/Pagination';
 import SearchBox from '../../components/manager/SearchBox';
-import SectionHeader from '../../components/manager/SectionHeader';
 import TableCard from '../../components/manager/TableCard';
 import Toggle from '../../components/manager/Toggle';
 import BulkPhotosModal from './BulkPhotosModal';
@@ -29,18 +29,29 @@ const dispValue: Record<(typeof dispOptions)[number], string> = {
   Todos: '', Disponível: 'disponivel', 'Últimas unidades': 'ultimas_unidades', Indisponível: 'indisponivel',
 };
 
+const ABAS = ['Produtos', 'Categorias e marcas'] as const;
+type Aba = (typeof ABAS)[number];
+
 export default function Products() {
-  const [tab, setTab] = useState<'Produtos' | 'Categorias e marcas'>('Produtos');
+  const [tab, setTab] = useState<Aba>('Produtos');
+  const tabs = <UnderlineTabs tabs={ABAS} value={tab} onChange={setTab} label="Seção" panelId="painel-produtos" />;
+  if (tab === 'Produtos') return <ProductList tabs={tabs} />;
   return (
-    <>
-      <SectionHeader title="Produtos" subtitle="Catálogo, estoque, imagens, categorias e marcas." />
-      <div className="mb-5"><ChipFilter label="Seção" options={['Produtos', 'Categorias e marcas'] as const} value={tab} onChange={setTab} /></div>
-      {tab === 'Produtos' ? <ProductList /> : <Taxonomies />}
-    </>
+    <div className="space-y-4">
+      <h2 className="text-2xl font-extrabold text-ink">Produtos</h2>
+      {tabs}
+      <div role="tabpanel" id="painel-produtos" aria-labelledby="aba-1"><Taxonomies /></div>
+    </div>
   );
 }
 
-function ProductList() {
+// Regra única de "estoque baixo", a mesma do selo do menu (back: painelControlador.js, ESTOQUE_BAIXO):
+// produto ativo com estoque atual menor ou igual ao estoque mínimo.
+const estoqueBaixo = (p: Produto) => !!p.ativo && p.estoque !== undefined && p.estoque_minimo !== undefined && p.estoque <= p.estoque_minimo;
+
+type Cartao = 'semFoto';
+
+function ProductList({ tabs }: { tabs: ReactNode }) {
   const toast = useToast();
   const { refreshCounters } = useManager();
   const [params] = useSearchParams();
@@ -52,25 +63,33 @@ function ProductList() {
   const [ordenar, setOrdenar] = useState('nome');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [cartao, setCartao] = useState<Cartao | null>(null);
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const busca = useDebounced(search.trim());
   const categorias = useApi(() => api.get<{ categorias: Categoria[] }>('/categorias', { incluir_inativos: true }), []);
   const marcas = useApi(() => api.get<{ marcas: Marca[] }>('/marcas', { incluir_inativos: true }), []);
 
-  const filtros = { busca, categoria, disponibilidade: dispValue[disp], incluir_inativos: inativos || undefined, ordenar };
-  const lista = useApi(
-    () => api.get<{ produtos: Produto[]; paginacao: Paginacao }>('/produtos', { ...filtros, pagina: page, limite: pageSize }),
-    [busca, categoria, disp, inativos, ordenar, page, pageSize],
-  );
-
+  // "Estoque baixo" é o cartão e também o chip "Últimas unidades": os dois usam a mesma regra do selo do menu.
+  const baixo = cartao === null && disp === 'Últimas unidades';
+  const mostrarInativos = inativos;
+  const filtros = { busca, categoria, disponibilidade: dispValue[disp], incluir_inativos: mostrarInativos || undefined, ordenar };
   // Contagem do catálogo, sem filtros: todos os cadastrados e os ativos (os que aparecem no site agora).
   const totalTodos = useApi(() => api.get<{ paginacao: Paginacao }>('/produtos', { incluir_inativos: true, pagina: 1, limite: 1 }), []);
   const totalAtivos = useApi(() => api.get<{ paginacao: Paginacao }>('/produtos', { pagina: 1, limite: 1 }), []);
-  // Produtos sem foto: vêm da lista completa (a API não tem filtro "sem foto"). Servem para o contador, o filtro e a lista de SKUs.
-  const [soSemFoto, setSoSemFoto] = useState(false);
+  // A API não tem filtro "sem foto" nem a regra do selo de estoque baixo: esses filtros vêm da lista completa do catálogo.
   const catalogo = useApi(() => fetchAllPages<Produto>('/produtos', 'produtos', { incluir_inativos: true }), []);
+  const local = cartao === 'semFoto' || baixo;
+  const lista = useApi(
+    () => api.get<{ produtos: Produto[]; paginacao: Paginacao }>('/produtos', { ...filtros, pagina: page, limite: pageSize }),
+    [busca, categoria, disp, mostrarInativos, ordenar, page, pageSize],
+    !local,
+  );
   const semFoto = (catalogo.data ?? []).filter((p) => !p.imagem_url);
   const nTodos = totalTodos.data?.paginacao.total;
   const nAtivos = totalAtivos.data?.paginacao.total;
+  const nInativos = nTodos !== undefined && nAtivos !== undefined ? nTodos - nAtivos : undefined;
+  const nBaixo = catalogo.data ? catalogo.data.filter(estoqueBaixo).length : undefined;
+  const nSemFoto = catalogo.data ? semFoto.length : undefined;
 
   const [editing, setEditing] = useState<Produto | 'novo' | null>(null);
   const [stockOf, setStockOf] = useState<Produto | null>(null);
@@ -79,11 +98,28 @@ function ProductList() {
 
   const resetPage = () => setPage(1);
   const termo = busca.toLowerCase();
-  const semFotoFiltrados = semFoto.filter((p) => !termo || [p.nome, p.sku, p.marca?.nome ?? ''].some((t) => t.toLowerCase().includes(termo)));
-  const linhas = soSemFoto ? semFotoFiltrados.slice((page - 1) * pageSize, page * pageSize) : lista.data?.produtos;
-  const totalLinhas = soSemFoto ? semFotoFiltrados.length : lista.data?.paginacao.total;
-  const carregando = soSemFoto ? catalogo.loading && !catalogo.data : lista.loading;
-  const pronto = soSemFoto ? Boolean(catalogo.data) : Boolean(lista.data);
+  const naBusca = (p: Produto) => !termo || [p.nome, p.sku, p.marca?.nome ?? ''].some((t) => t.toLowerCase().includes(termo));
+  const naCategoria = (p: Produto) => !categoria || [p.categoria, p.subcategoria].some((c) => c && c.slug === categoria);
+  const regraLocal = (p: Produto) => (cartao === 'semFoto' ? !p.imagem_url : estoqueBaixo(p));
+  const ordem = (a: Produto, b: Produto) => {
+    if (ordenar === 'estoque') return (a.estoque ?? 0) - (b.estoque ?? 0) || a.nome.localeCompare(b.nome, 'pt-BR');
+    if (ordenar === 'estoque_desc') return (b.estoque ?? 0) - (a.estoque ?? 0) || a.nome.localeCompare(b.nome, 'pt-BR');
+    if (ordenar === 'recentes') return b.id_produto - a.id_produto;
+    return a.nome.localeCompare(b.nome, 'pt-BR');
+  };
+  const filtradosLocal = local ? (catalogo.data ?? []).filter((p) => regraLocal(p) && naBusca(p) && naCategoria(p)).sort(ordem) : [];
+  const linhas = local ? filtradosLocal.slice((page - 1) * pageSize, page * pageSize) : lista.data?.produtos;
+  const totalLinhas = local ? filtradosLocal.length : lista.data?.paginacao.total;
+  const carregando = local ? catalogo.loading && !catalogo.data : lista.loading;
+  const pronto = local ? Boolean(catalogo.data) : Boolean(lista.data);
+  const vazio = cartao === 'semFoto' ? 'Nenhum produto sem foto com esses filtros.'
+      : baixo ? 'Nenhum produto com estoque baixo com esses filtros.' : 'Nenhum produto encontrado.';
+
+  const clicarAlerta = (c: Cartao | 'baixo') => {
+    if (c === 'baixo') { setCartao(null); setDisp(disp === 'Últimas unidades' ? 'Todos' : 'Últimas unidades'); }
+    else { setCartao(cartao === c ? null : c); setDisp('Todos'); }
+    resetPage();
+  };
 
   // Lista de SKUs sem foto: a empresa nomeia cada arquivo do ZIP com o SKU (ex.: 110606.jpg).
   const baixarSemFoto = () => downloadCsv('produtos-sem-foto.csv', ['SKU', 'Produto', 'Marca', 'Nome do arquivo sugerido', 'Ativo'],
@@ -109,7 +145,7 @@ function ProductList() {
   // CSV do catálogo sem preço (decisão do projeto: nada financeiro no sistema).
   const exportCsv = async () => {
     try {
-      const todos = await fetchAllPages<Produto>('/produtos', 'produtos', filtros);
+      const todos = local ? filtradosLocal : await fetchAllPages<Produto>('/produtos', 'produtos', filtros);
       downloadCsv('produtos.csv', ['SKU', 'Produto', 'Categoria', 'Marca', 'Estoque', 'Estoque mínimo', 'Múltiplo de venda', 'Ativo'],
         todos.map((p) => [p.sku, p.nome, [p.categoria?.nome, p.subcategoria?.nome].filter(Boolean).join(' / '), p.marca?.nome ?? '', p.estoque ?? '', p.estoque_minimo ?? '', p.multiplo_venda, p.ativo ? 'Sim' : 'Não']));
     } catch (e) {
@@ -117,84 +153,100 @@ function ProductList() {
     }
   };
 
+  const foco = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
+  const campo = `rounded-full border border-black/10 bg-white px-3 py-2.5 text-sm ${foco}`;
+  const chipAlerta = (ativo: boolean) => `inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ring-1 transition ${foco} ${ativo ? 'bg-brand/10 text-brand ring-brand' : 'bg-white text-ink ring-black/10 hover:bg-black/5'}`;
+  const secundario = `inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium text-ink/80 transition hover:bg-black/5 ${foco}`;
   return (
     <>
-      {nTodos !== undefined && nAtivos !== undefined && (
-        <p role="status" className="mb-3 flex flex-wrap items-center gap-2 text-sm">
-          <span className="rounded-full bg-brand/10 px-3 py-1 font-extrabold text-brand">{nAtivos} {nAtivos === 1 ? 'produto no site' : 'produtos no site'}</span>
-          <span className="text-muted">{nTodos} cadastrados no total{nTodos > nAtivos ? ` · ${nTodos - nAtivos} ${nTodos - nAtivos === 1 ? 'inativo' : 'inativos'}` : ''}</span>
-          {catalogo.data && (
-            <button type="button" aria-pressed={soSemFoto} onClick={() => { setSoSemFoto((v) => !v); resetPage(); }}
-              title="Mostrar só os produtos sem foto"
-              className={`rounded-full px-3 py-1 font-extrabold transition ${soSemFoto ? 'bg-accent text-white' : semFoto.length > 0 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
-              {semFoto.length === 0 ? 'Todos com foto' : `${semFoto.length} sem foto${soSemFoto ? ' (mostrando)' : ''}`}
-            </button>
-          )}
-          {semFoto.length > 0 && (
-            <button type="button" onClick={baixarSemFoto} className="text-sm font-extrabold text-brand hover:underline">
-              Baixar lista de SKUs sem foto
-            </button>
-          )}
-        </p>
-      )}
-      <div className="mb-4 flex flex-wrap justify-end gap-2">
-        <Button variant="ghost" onClick={exportCsv}><Icon name="download" className="mr-1 inline h-5 w-5 align-text-bottom" />Exportar</Button>
-        <Button variant="ghost" onClick={() => setBulkOpen(true)}><Icon name="upload" className="mr-1 inline h-5 w-5 align-text-bottom" />Fotos em lote</Button>
-        <Button variant="accent" onClick={() => setEditing('novo')}><Icon name="plus" className="mr-1 inline h-5 w-5 align-text-bottom" />Novo produto</Button>
-      </div>
-      <div className="mb-4 grid gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <SearchBox value={search} onChange={(v) => { setSearch(v); resetPage(); }} placeholder="Buscar por nome, SKU, marca..." />
-          <select value={categoria} onChange={(e) => { setCategoria(e.target.value); resetPage(); }} aria-label="Categoria"
-            className="rounded-full border border-black/10 bg-white px-3 py-2.5 text-sm">
-            <option value="">Todas as categorias</option>
-            {categorias.data?.categorias.map((c) => <option key={c.id_categoria} value={c.slug}>{c.nome}</option>)}
-          </select>
-          <select value={ordenar} onChange={(e) => setOrdenar(e.target.value)} aria-label="Ordenar"
-            className="rounded-full border border-black/10 bg-white px-3 py-2.5 text-sm">
-            <option value="nome">Nome (A–Z)</option>
-            <option value="estoque">Menor estoque</option>
-            <option value="estoque_desc">Maior estoque</option>
-            <option value="recentes">Mais recentes</option>
-          </select>
-          <label className="flex items-center gap-2 text-sm">
-            <Toggle checked={inativos} label="Mostrar produtos inativos" onChange={(v) => { setInativos(v); resetPage(); }} />
-            Mostrar inativos
-          </label>
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-2xl font-extrabold text-ink">Produtos</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className={secundario} onClick={exportCsv}><Icon name="download" className="h-4 w-4" />Exportar</button>
+            <button type="button" className={secundario} onClick={() => setBulkOpen(true)}><Icon name="upload" className="h-4 w-4" />Fotos em lote</button>
+            <Button variant="accent" className={foco} onClick={() => setEditing('novo')}><Icon name="plus" className="mr-1 inline h-5 w-5 align-text-bottom" />Novo produto</Button>
+          </div>
         </div>
-        <ChipFilter label="Filtrar por disponibilidade" options={dispOptions} value={disp} onChange={(v) => { setDisp(v); resetPage(); }} />
-      </div>
+
+        {tabs}
+
+        <div role="tabpanel" id="painel-produtos" aria-labelledby="aba-0" className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <SearchBox value={search} onChange={(v) => { setSearch(v); resetPage(); }} placeholder="Buscar por nome, SKU, marca..." />
+            <button type="button" aria-expanded={filtrosAbertos} onClick={() => setFiltrosAbertos((v) => !v)} className={`${campo} sm:hidden`}>Filtros</button>
+            <label className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm sm:order-last">
+              <Toggle checked={inativos} label="Mostrar inativos" onChange={(v) => { setInativos(v); resetPage(); }} />
+              Mostrar inativos
+            </label>
+            <div className={filtrosAbertos ? 'grid w-full grid-cols-2 gap-2 sm:contents' : 'hidden sm:contents'}>
+              <select value={categoria} onChange={(e) => { setCategoria(e.target.value); resetPage(); }} aria-label="Categoria" className={`${campo} shrink-0`}>
+                <option value="">Todas as categorias</option>
+                {categorias.data?.categorias.map((c) => <option key={c.id_categoria} value={c.slug}>{c.nome}</option>)}
+              </select>
+              <select value={cartao === null ? disp : 'Todos'} onChange={(e) => { setCartao(null); setDisp(e.target.value as (typeof dispOptions)[number]); resetPage(); }} aria-label="Estoque" className={`${campo} shrink-0`}>
+                {dispOptions.map((o) => <option key={o} value={o}>{o === 'Todos' ? 'Todos os estoques' : o}</option>)}
+              </select>
+              <select value={ordenar} onChange={(e) => setOrdenar(e.target.value)} aria-label="Ordenar" className={`${campo} col-span-2 shrink-0 sm:col-span-1`}>
+                <option value="nome">Nome (A–Z)</option>
+                <option value="estoque">Menor estoque</option>
+                <option value="estoque_desc">Maior estoque</option>
+                <option value="recentes">Mais recentes</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {(!!nBaixo || baixo) && (
+                <button type="button" aria-pressed={baixo} onClick={() => clicarAlerta('baixo')} className={chipAlerta(baixo)}>
+                  <span aria-hidden="true" className="h-2 w-2 rounded-full bg-amber-500" />Repor estoque <b>{nBaixo ?? 0}</b>
+                </button>
+              )}
+              {baixo && <span className="text-xs text-muted">Mostrando produtos com estoque no mínimo ou abaixo</span>}
+              {!!nSemFoto && (
+                <>
+                  <button type="button" aria-pressed={cartao === 'semFoto'} onClick={() => clicarAlerta('semFoto')} className={chipAlerta(cartao === 'semFoto')}>
+                    <span aria-hidden="true" className="h-2 w-2 rounded-full bg-red-600" />Sem foto <b>{nSemFoto}</b>
+                  </button>
+                  <button type="button" onClick={baixarSemFoto} className={`text-xs font-medium text-blue-700 underline hover:text-blue-900 ${foco}`}>Baixar lista de SKUs</button>
+                </>
+              )}
+              {cartao === 'semFoto' && <span className="text-xs text-muted">Mostrando produtos sem imagem</span>}
+            </div>
+            {totalLinhas !== undefined && nTodos !== undefined && (
+              <p role="status" className="text-xs text-muted">
+                {totalLinhas} de {nTodos} produtos{!!nInativos && ` · ${nInativos} ${nInativos === 1 ? 'inativo' : 'inativos'}`}
+              </p>
+            )}
+          </div>
 
       {lista.error ? <ErrorState error={lista.error} onRetry={lista.reload} /> : (
         <TableCard headers={['Produto', 'SKU', 'Categoria / marca', 'Estoque', 'Ações', 'Ativo']}
-          isEmpty={!carregando && linhas?.length === 0} empty={soSemFoto ? 'Nenhum produto sem foto com esses filtros.' : 'Nenhum produto encontrado.'}
+          isEmpty={!carregando && linhas?.length === 0} empty={vazio}
           footer={pronto && totalLinhas !== undefined && <Pagination page={page} pageSize={pageSize} total={totalLinhas} onPageChange={setPage}
             onPageSizeChange={(s) => { setPageSize(s); resetPage(); }} />}>
           {carregando && <tr><td colSpan={6}><Loading className="py-8" /></td></tr>}
           {!carregando && linhas?.map((p) => (
-            <tr key={p.id_produto} className={p.ativo ? '' : 'opacity-60'}>
+            <tr key={p.id_produto} className={`transition hover:bg-surface/60 ${p.ativo ? '' : 'opacity-60'}`}>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <img src={imageUrl(p.imagem_url)} alt="" className="h-12 w-12 shrink-0 rounded-xl bg-surface object-contain foto-produto" />
                   <span className="max-w-64 font-medium">{p.nome}</span>
                 </div>
               </td>
-              <td className="px-4 text-sm text-muted">{p.sku}</td>
+              <td className="whitespace-nowrap px-4 text-sm text-muted">{p.sku}</td>
               <td className="px-4 text-sm">{p.categoria?.nome ?? '—'}{p.subcategoria ? ` / ${p.subcategoria.nome}` : ''}<span className="block text-muted">{p.marca?.nome ?? '—'}</span></td>
               <td className="px-4 text-sm">
                 <p className="font-extrabold">{p.estoque} <span className="font-normal text-muted">/ mín. {p.estoque_minimo}</span></p>
                 <Availability value={p.disponibilidade} />
                 {p.multiplo_venda > 1 && <p className="text-xs text-muted">Múltiplo {p.multiplo_venda}</p>}
-                <button type="button" onClick={() => { setStockFoco('historico'); setStockOf(p); }}
-                  className="mt-1 inline-flex items-center gap-1 text-xs font-extrabold text-brand hover:underline">
-                  <Icon name="history" className="h-4 w-4" />Quem mexeu no estoque
-                </button>
               </td>
               <td className="px-4">
                 <div className="flex">
-                  <IconButton icon="edit" label="Editar produto" onClick={() => setEditing(p)} />
-                  <IconButton icon="box" label="Ajustar estoque" onClick={() => { setStockFoco('ajuste'); setStockOf(p); }} />
-                  <IconButton icon="history" label="Histórico de estoque (quem alterou e quando)" onClick={() => { setStockFoco('historico'); setStockOf(p); }} />
+                  <IconButton icon="edit" label={`Editar ${p.nome}`} title="Editar produto" onClick={() => setEditing(p)} />
+                  <IconButton icon="box" label={`Ajustar estoque de ${p.nome}`} title="Ajustar estoque" onClick={() => { setStockFoco('ajuste'); setStockOf(p); }} />
+                  <IconButton icon="history" label={`Ver histórico de estoque de ${p.nome}`} title="Histórico de estoque" onClick={() => { setStockFoco('historico'); setStockOf(p); }} />
                 </div>
               </td>
               <td className="px-4"><Toggle checked={!!p.ativo} label={`Ativar ${p.nome}`} onChange={(v) => toggleActive(p, v)} /></td>
@@ -202,6 +254,8 @@ function ProductList() {
           ))}
         </TableCard>
       )}
+        </div>
+      </div>
 
       {editing && (
         <ProductFormModal product={editing === 'novo' ? null : editing} categorias={categorias.data?.categorias ?? []} marcas={marcas.data?.marcas ?? []}
@@ -378,10 +432,14 @@ function ProductFormModal({ product, categorias, marcas, onClose, onSaved }: {
 
 const TIPO_MOV: Record<Movimentacao['tipo'], string> = { ajuste: 'Ajuste', pedido: 'Pedido', cancelamento: 'Cancelamento', importacao: 'Importação' };
 
+const MODOS = ['Somar / subtrair', 'Definir valor'] as const;
+// Mesma altura (h-11), borda, raio e padding nos dois campos do ajuste de estoque.
+const CAMPO_ESTOQUE = 'campo h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-ink outline-none focus:border-brand';
+
 function StockModal({ product, foco, onClose, onSaved }: { product: Produto; foco: 'ajuste' | 'historico'; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const [estoque, setEstoque] = useState(product.estoque ?? 0);
-  const [modo, setModo] = useState<'Somar / subtrair' | 'Definir valor'>('Somar / subtrair');
+  const [modo, setModo] = useState<(typeof MODOS)[number]>(MODOS[0]);
   const [valor, setValor] = useState('');
   const [observacao, setObservacao] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -414,18 +472,50 @@ function StockModal({ product, foco, onClose, onSaved }: { product: Produto; foc
 
   const ultima = movs.data?.movimentacoes[0];
 
+  // Textos de apoio do formulário e resultado previsto (só conta, sem chamada à API).
+  const erroValor = errors.quantidade ?? errors.ajuste;
+  const ajudaValor = modo === 'Definir valor' ? 'Informe a quantidade total que existe agora.' : 'Use -2 para tirar 2 unidades ou 24 para somar 24.';
+  const numero = Number(valor);
+  const valido = valor.trim() !== '' && Number.isInteger(numero) && (modo === 'Definir valor' || numero !== 0);
+  const resultado = modo === 'Definir valor' ? numero : estoque + numero;
+  const previsto = valido ? { valor: resultado, negativo: resultado < 0 } : null;
+
   const ajuste = (
     <form onSubmit={submit} noValidate className="mt-4 rounded-2xl border border-black/10 p-4">
-      <h4 className="mb-1 font-extrabold">Ajustar estoque</h4>
+      <h4 className="mb-2 font-extrabold">Ajustar estoque</h4>
       <FormError message={formError} />
-      <ChipFilter label="Tipo de ajuste" options={['Somar / subtrair', 'Definir valor'] as const} value={modo} onChange={setModo} />
-      <div className="grid gap-x-4 sm:grid-cols-[160px_minmax(0,1fr)]">
-        <Field label={modo === 'Definir valor' ? 'Novo estoque' : 'Ajuste (ex.: -2 ou 24)'} type="number" value={valor}
-          onChange={(e) => setValor(e.target.value)} error={errors.quantidade ?? errors.ajuste} />
-        <Field label="Observação" placeholder="Ex.: avaria, contagem, chegada de mercadoria" maxLength={500} value={observacao}
-          onChange={(e) => setObservacao(e.target.value)} error={errors.observacao} />
+      <div role="group" aria-label="Tipo de ajuste" className="inline-flex h-11 overflow-hidden rounded-full border border-black/10 bg-white">
+        {MODOS.map((m) => (
+          <button key={m} type="button" aria-pressed={modo === m} onClick={() => setModo(m)}
+            className={`h-full px-4 text-sm font-medium transition focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand ${m !== MODOS[0] ? 'border-l border-black/10' : ''} ${modo === m ? 'bg-brand text-white' : 'text-ink hover:bg-black/5'}`}>
+            {m}
+          </button>
+        ))}
       </div>
-      <Button type="submit" variant="primary" className="mt-4">Salvar ajuste</Button>
+      <div className="mt-4 grid items-start gap-x-4 gap-y-4 sm:grid-cols-[170px_minmax(0,1fr)]">
+        <div>
+          <label htmlFor="estoque-valor" className="mb-1 block whitespace-nowrap text-sm text-muted">{modo === 'Definir valor' ? 'Novo valor' : 'Ajuste'} <b className="text-accent">*</b></label>
+          <input id="estoque-valor" type="number" value={valor} onChange={(e) => setValor(e.target.value)} aria-invalid={!!erroValor}
+            aria-describedby="estoque-valor-ajuda" className={CAMPO_ESTOQUE} />
+          <div id="estoque-valor-ajuda" className="mt-1 min-h-10 text-xs leading-5">
+            {erroValor ? <p role="alert" className="text-accent">{erroValor}</p> : <p className="text-muted">{ajudaValor}</p>}
+            {previsto && (previsto.negativo
+              ? <p className="text-amber-700">O resultado ficaria negativo.</p>
+              : <p className="text-muted">Ficará com {previsto.valor} {previsto.valor === 1 ? 'unidade' : 'unidades'}</p>)}
+          </div>
+        </div>
+        <div>
+          <label htmlFor="estoque-obs" className="mb-1 block whitespace-nowrap text-sm text-muted">Observação <b className="text-accent">*</b></label>
+          <input id="estoque-obs" type="text" placeholder="Ex.: avaria, contagem, chegada de mercadoria" maxLength={500} value={observacao}
+            onChange={(e) => setObservacao(e.target.value)} aria-invalid={!!errors.observacao} aria-describedby="estoque-obs-ajuda" className={CAMPO_ESTOQUE} />
+          <div id="estoque-obs-ajuda" className="mt-1 min-h-10 text-xs leading-5">
+            {errors.observacao ? <p role="alert" className="text-accent">{errors.observacao}</p> : <p className="text-muted">Obrigatória, de 3 a 500 caracteres.</p>}
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 flex sm:justify-end">
+        <Button type="submit" variant="primary" className="h-11 w-full py-0 sm:w-auto">Salvar ajuste</Button>
+      </div>
     </form>
   );
 

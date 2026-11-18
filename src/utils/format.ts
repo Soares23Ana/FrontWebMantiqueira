@@ -48,3 +48,10 @@ export const disponibilidadeLabel = {
   ultimas_unidades: 'Últimas unidades',
   indisponivel: 'Indisponível',
 } as const;
+
+/** Minutos que faltam até `expiraEm` (ISO), arredondados e nunca menos de 1. */
+export const minutosDeValidade = (expiraEm: string, agora = Date.now()): number =>
+  Math.max(1, Math.round((Date.parse(expiraEm) - agora) / 60000));
+
+/** "1 minuto" no singular e "N minutos" nos demais casos. */
+export const textoValidade = (minutos: number): string => (minutos === 1 ? '1 minuto' : `${minutos} minutos`);

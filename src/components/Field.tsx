@@ -9,7 +9,7 @@ type Props = ComponentProps<'input'> & {
   mandatory?: boolean; // mostra o * vermelho (padrão: sim)
 };
 
-const inputClass = 'campo w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-ink outline-none focus:border-brand disabled:bg-surface';
+const inputClass = 'campo w-full min-w-0 max-w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-ink outline-none focus:border-brand disabled:bg-surface';
 
 export default function Field({ label, error, adornment, mandatory = true, className = '', ...input }: Props) {
   return (

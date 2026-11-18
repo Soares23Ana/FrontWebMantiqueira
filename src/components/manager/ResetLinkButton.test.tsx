@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../api/client', async (importOriginal) => {
   const real = await importOriginal<typeof import('../../api/client')>();
@@ -8,12 +8,20 @@ vi.mock('../../api/client', async (importOriginal) => {
 });
 
 import { api, ApiError } from '../../api/client';
+import { minutosDeValidade, textoValidade } from '../../utils/format';
 import ResetLinkButton from './ResetLinkButton';
+
+// Hora fixa (só o Date é falso, para o userEvent não travar): 17/11/2026 21:00 UTC.
+const AGORA = Date.parse('2026-11-17T21:00:00.000Z');
+const daquiA = (min: number) => new Date(AGORA + min * 60000).toISOString();
 
 describe('Gerar link de redefinição', () => {
   beforeEach(() => {
     vi.mocked(api.post).mockReset();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(AGORA);
   });
+  afterEach(() => vi.useRealTimers());
 
   it('chama a rota, monta o link com o endereço do site e mostra a validade e o aviso', async () => {
     vi.mocked(api.post).mockResolvedValueOnce({ mensagem: 'ok', token: 'tok123', expira_em: '2026-11-17T22:00:00.000Z' });
@@ -63,5 +71,34 @@ describe('Gerar link de redefinição', () => {
     render(<ResetLinkButton rota="/x" nome="A" />);
     await userEvent.click(screen.getByRole('button', { name: /gerar link/i }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  describe("validade vem de expira_em", () => {
+    it.each([[60, "60 minutos"], [30, "30 minutos"], [120, "120 minutos"], [1, "1 minuto"]])("%i min à frente: aviso mostra \"%s\" e o WhatsApp leva o mesmo número", async (min, texto) => {
+      vi.mocked(api.post).mockResolvedValueOnce({ token: "t", expira_em: daquiA(min) });
+      render(<ResetLinkButton rota="/x" nome="A" telefone="(19) 99999-0000" />);
+      await userEvent.click(screen.getByRole("button", { name: /gerar link/i }));
+      expect(await screen.findByText(new RegExp("aparece só agora e vale " + texto + "\. Se perder"))).toBeInTheDocument();
+      const href = (await screen.findByRole("link", { name: /WhatsApp/ })).getAttribute("href") ?? "";
+      const mensagem = decodeURIComponent(href.split("?text=")[1]);
+      expect(mensagem).toContain("(vale por " + texto + " e só pode ser usado uma vez)");
+    });
+
+    it("o número não muda enquanto a janela está aberta", async () => {
+      vi.mocked(api.post).mockResolvedValueOnce({ token: "t", expira_em: daquiA(60) });
+      render(<ResetLinkButton rota="/x" nome="A" telefone={null} />);
+      await userEvent.click(screen.getByRole("button", { name: /gerar link/i }));
+      await screen.findByText(/vale 60 minutos/);
+      vi.setSystemTime(AGORA + 45 * 60000);
+      await userEvent.click(await screen.findByRole("button", { name: "Copiar link" }));
+      expect(screen.getByText(/vale 60 minutos/)).toBeInTheDocument();
+    });
+  });
+
+  it("funções de validade", () => {
+    expect(minutosDeValidade(daquiA(60), AGORA)).toBe(60);
+    expect(minutosDeValidade(daquiA(-5), AGORA)).toBe(1);
+    expect(textoValidade(1)).toBe("1 minuto");
+    expect(textoValidade(5)).toBe("5 minutos");
   });
 });

@@ -19,8 +19,8 @@ import { useToast } from '../../context/ToastContext';
 import { useApi, useDebounced } from '../../hooks/useApi';
 import { formatCnpj } from '../../utils/cnpj';
 import { downloadCsv } from '../../utils/csv';
-import { formatDate, formatDateTime, formatPhone } from '../../utils/format';
-import { useManager } from './ManagerLayout';
+import { formatDate, formatPhone } from '../../utils/format';
+import { PedidosDeSenha } from './PedidosDeSenha';
 import CustomerSupport from './CustomerSupport';
 import type { CarrinhoAtual } from './CustomerSupport';
 import type { Cliente, Endereco, Paginacao, StatusPedido } from '../../types';
@@ -31,47 +31,6 @@ interface Detalhes {
   produtos_mais_solicitados: { id_produto: number; nome: string; quantidade_solicitada: number }[];
   carrinho_atual?: CarrinhoAtual | null;
   ultimo_evento_em?: string | null;
-}
-
-interface PedidoSenha {
-  id_solicitacao: number;
-  solicitado_em: string;
-  cliente: { id_usuario: number; nome_exibicao: string; cnpj: string | null; telefone: string | null; email: string; ativo: boolean } | null;
-}
-
-// Clientes que pediram nova senha na tela de login (POST /auth/solicitar-redefinicao). "Enviar link" gera o link de
-// uso único e abre o WhatsApp no telefone do cliente com a mensagem pronta; o pedido sai da lista.
-export function PedidosDeSenha({ onAbrir }: { onAbrir: (id: number) => void }) {
-  const { refreshCounters } = useManager();
-  const { data, reload } = useApi(() => api.get<{ solicitacoes: PedidoSenha[]; total: number }>('/clientes/redefinicoes-pendentes'), []);
-  const pedidos = (data?.solicitacoes ?? []).filter((p) => p.cliente);
-  if (pedidos.length === 0) return null;
-  return (
-    <section aria-label="Pedidos de nova senha" className="mb-5 rounded-2xl border border-accent/40 bg-accent/10 p-4">
-      <h3 className="font-extrabold text-accent">Pedidos de nova senha ({pedidos.length})</h3>
-      <p className="mb-3 text-sm text-muted">Estes clientes pediram uma nova senha no login. Clique em “Enviar link”: o link é gerado na hora e o WhatsApp abre no telefone do cliente, com a mensagem pronta.</p>
-      <ul className="grid gap-2">
-        {pedidos.map((p) => {
-          const c = p.cliente!;
-          return (
-            <li key={p.id_solicitacao} className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-white p-3 text-sm">
-              <div className="min-w-48 flex-1">
-                <button type="button" onClick={() => onAbrir(c.id_usuario)} className="text-left font-extrabold hover:underline">{c.nome_exibicao}</button>
-                <span className="block text-muted">{c.cnpj ?? c.email}</span>
-              </div>
-              <div className="text-muted">
-                <span className="block">{c.telefone ? formatPhone(c.telefone) : 'Sem telefone cadastrado'}</span>
-                <span className="block">Pediu em {formatDateTime(p.solicitado_em)}</span>
-              </div>
-              <ResetLinkButton rota={`/clientes/${c.id_usuario}/redefinicao-senha`} nome={c.nome_exibicao} telefone={c.telefone}
-                rotulo="Enviar link" abrirWhatsApp className="!bg-green-600 !text-white hover:brightness-110"
-                aoGerar={refreshCounters} aoFechar={reload} />
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
 }
 
 export default function Customers() {

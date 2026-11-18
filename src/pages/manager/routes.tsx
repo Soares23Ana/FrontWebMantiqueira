@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import AbandonedCarts from './AbandonedCarts';
 import Campaigns from './Campaigns';
 import Cms from './Cms';
+import Configuracoes from './Configuracoes';
 import Customers from './Customers';
 import Imports from './Imports';
 import Metrics from './Metrics';
@@ -12,6 +13,7 @@ import Overview from './Overview';
 import Products from './Products';
 import SystemHealth from './SystemHealth';
 import Team from './Team';
+import TeamActivity from './TeamActivity';
 
 // "Equipe" só para quem tem pode_gerenciar_equipe (o back responde 403 para os demais).
 function TeamGuard() {
@@ -30,6 +32,8 @@ export const managerRoutes: RouteObject[] = [
   { path: 'campanhas', element: <Campaigns /> },
   { path: 'metricas', element: <Metrics /> },
   { path: 'equipe', element: <TeamGuard /> },
+  { path: 'atividade', element: <TeamActivity /> },
   { path: 'saude', element: <SystemHealth /> },
+  { path: 'configuracoes', element: <Configuracoes /> },
   { path: '*', element: <Navigate to="/gestor" replace /> },
 ];

@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
 import { api } from '../api/client';
 import { formatCnpj, isValidCnpj, normalizarCnpj } from '../utils/cnpj';
+import { caminhoInternoSeguro } from '../utils/safeRedirect';
 
 // Tela única de login, neutra: não diz que existe uma área da equipe. Para o cliente o campo é só de CNPJ (numérico ou
 // com letras). A equipe continua entrando pelo mesmo campo com o e-mail, sem aparecer na tela: a regra da API é só o
@@ -20,7 +21,8 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as { from?: string; cadastro?: string } | null;
-  const from = state?.from;
+  // O destino de retorno vem do histórico do navegador: só vale se for um caminho interno seguro.
+  const from = caminhoInternoSeguro(state?.from);
   const cadastroMsg = state?.cadastro;
   const [identificador, setIdentificador] = useState('');
   const [senha, setSenha] = useState('');
@@ -52,7 +54,7 @@ export default function Login() {
     }
     setEnviandoEsqueci(true);
     try {
-      const r = await api.post<{ mensagem: string }>('/auth/solicitar-redefinicao', { cnpj: normalizarCnpj(cnpjEsqueci) });
+      const r = await api.post<{ mensagem: string }>('/auth/redefinicao-senha/solicitar', { documento: normalizarCnpj(cnpjEsqueci) });
       setRespostaEsqueci(r.mensagem);
     } catch (err) {
       setErroEsqueci(errorMessage(err));

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, errorMessage, fetchAllPages, imageUrl } from '../../api/client';
 import Button from '../../components/Button';
@@ -31,14 +31,15 @@ export default function Orders() {
   const [status, setStatus] = useState<StatusFilter>('Todos');
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
+  const [soNovos, setSoNovos] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const busca = useDebounced(search.trim());
-  const filtros = { busca, status: status === 'Todos' ? '' : status, de, ate };
+  const filtros = { busca, status: status === 'Todos' ? '' : status, de, ate, ...(soNovos ? { visto: false } : {}) };
 
   const lista = useApi(
     () => api.get<{ pedidos: Pedido[]; paginacao: Paginacao }>('/pedidos', { ...filtros, pagina: page, limite: pageSize }),
-    [busca, status, de, ate, page, pageSize],
+    [busca, status, de, ate, soNovos, page, pageSize],
   );
 
   const openId = Number(params.get('pedido')) || null;
@@ -78,7 +79,13 @@ export default function Orders() {
             <input type="date" value={ate} onChange={(e) => { setAte(e.target.value); resetPage(); }} className="rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-ink" />
           </label>
         </div>
-        <ChipFilter label="Filtrar por status" options={statusOptions} value={status} onChange={(v) => { setStatus(v); resetPage(); }} />
+        <div className="flex flex-wrap items-center gap-2">
+          <ChipFilter label="Filtrar por status" options={statusOptions} value={status} onChange={(v) => { setStatus(v); resetPage(); }} />
+          <button type="button" aria-pressed={soNovos} onClick={() => { setSoNovos((v) => !v); resetPage(); }}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${soNovos ? 'bg-brand text-white' : 'bg-white text-ink ring-1 ring-black/10 hover:bg-black/5'}`}>
+            Só novos
+          </button>
+        </div>
       </div>
 
       {lista.error ? <ErrorState error={lista.error} onRetry={lista.reload} /> : (
@@ -91,7 +98,10 @@ export default function Orders() {
             <tr key={o.id_pedido} className="transition hover:bg-surface/60">
               <td className="px-4 py-3 font-extrabold">#{o.id_pedido}</td>
               <td className="px-4">
-                <p className="font-medium">{o.cliente?.nome_exibicao ?? '—'}</p>
+                <p className={o.visto === false ? 'font-extrabold' : 'font-medium'}>
+                  {o.cliente?.nome_exibicao ?? '—'}
+                  {o.visto === false && <span className="ml-2 rounded-full bg-accent px-2 py-0.5 align-middle text-xs font-extrabold text-white">Novo</span>}
+                </p>
                 <p className="text-sm text-muted">{o.cliente?.cnpj}</p>
               </td>
               <td className="px-4 text-muted">{formatDate(o.data_pedido)}</td>
@@ -116,6 +126,16 @@ function OrderDetailModal({ id, onClose, onChanged }: { id: number; onClose: () 
   const toast = useToast();
   const { refreshCounters } = useManager();
   const { data, loading, error, reload } = useApi(() => api.get<{ pedido: Pedido }>(`/pedidos/${id}`), [id]);
+  // Abrir o detalhe faz o back marcar o pedido como visto: só então o selo do menu e a etiqueta da lista são atualizados.
+  const avisado = useRef<number | null>(null);
+  const loadedId = data?.pedido.id_pedido;
+  useEffect(() => {
+    if (loadedId === undefined || avisado.current === loadedId) return;
+    avisado.current = loadedId;
+    refreshCounters();
+    onChanged();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedId]);
   const [observacao, setObservacao] = useState('');
   const [cancelOpen, setCancelOpen] = useState(false);
   const [motivo, setMotivo] = useState('');

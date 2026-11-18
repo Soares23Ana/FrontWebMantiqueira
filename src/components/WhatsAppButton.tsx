@@ -1,8 +1,5 @@
 import { useStore } from '../context/StoreContext';
 
-/** "5519996727161" → "19996727161" (sem o DDI 55, para exibir). */
-export const whatsappNumber = (digits: string) => (digits.startsWith('55') ? digits.slice(2) : digits);
-
 // Botão flutuante de WhatsApp; só aparece se o número estiver configurado no CMS.
 export default function WhatsAppButton() {
   const { config } = useStore();

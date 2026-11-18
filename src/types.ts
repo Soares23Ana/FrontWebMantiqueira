@@ -151,6 +151,9 @@ export interface Pedido {
   itens: ItemPedido[];
   total_itens: number;
   pode_cancelar?: boolean;
+  /** A equipe já abriu o detalhe? Campo ausente (API antiga) conta como visto. */
+  visto?: boolean;
+  visto_em?: string | null;
   cliente?: ClienteResumo;
   funcionario?: { id_usuario: number; nome: string; cargo: string | null } | null;
   proximo_status?: StatusPedido | null;

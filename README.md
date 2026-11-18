@@ -38,16 +38,18 @@ Site de pedidos B2B da **Mantiqueira Distribuidora**, feito como Projeto Integra
 | Tela | O que a equipe faz |
 | --- | --- |
 | Painel | Vê pedidos pendentes, estoque baixo, clientes ativos, novos cadastros e alertas de reposição |
-| Pedidos | Busca e filtra, avança o andamento com observação, cancela com motivo obrigatório e exporta planilha |
-| Produtos | Cadastra e edita com foto, categoria e subcategoria, ajusta o estoque com observação, vê o histórico e gerencia categorias (2 níveis) e marcas |
+| Pedidos | Busca e filtra, avança o andamento com observação, cancela com motivo obrigatório e exporta planilha; pedidos ainda não abertos ganham a etiqueta "Novo" (filtro "Só novos") e o selo do menu conta só esses |
+| Produtos | Abas sublinhadas, barra única de busca, categoria, estoque e ordenação, e chips de atenção "Repor estoque" e "Sem foto" que filtram a lista ("Repor estoque" e a opção "Últimas unidades" usam a mesma regra do selo do menu: ativo e estoque <= mínimo). Cadastra e edita com foto, categoria e subcategoria, ajusta o estoque com observação, vê o histórico e gerencia categorias (2 níveis) e marcas |
 | Importação | Envia planilha .xlsx ou CSV com modo simulação, relatório de erros por linha e histórico das sincronizações |
 | Clientes | Busca, filtra os novos de 7 dias, bloqueia acesso, corrige dados, define senha temporária, vê o carrinho atual, anota notas internas e consulta o histórico do cliente |
 | Carrinhos abandonados | Vê quem deixou itens parados, chama pelo WhatsApp e registra o contato |
-| Conteúdo (CMS) | Edita banners (com destino), pop-up, blocos de texto, contatos, aviso do topo e meta de reposição |
+| Conteúdo (CMS) | Edita banners (com destino) e o pop-up da página inicial, em abas sublinhadas. A aba "Blocos de texto" está escondida porque o site público ainda não tem página que exiba esses blocos; o código continua em `Cms.tsx`, e para reativar basta trocar `MOSTRAR_BLOCOS` para `true` |
 | Campanhas | Cria selo, período e produtos, e encerra campanhas |
 | Métricas | Vê visitantes, buscas, funil de compra, produtos mais vistos e pedidos, cliques e pedidos por dia, e clientes sem comprar |
-| Equipe | Cria e desativa usuários da equipe (só para quem tem a marca de gerenciar a equipe) |
+| Equipe | Cria e desativa usuários da equipe (só para quem tem a marca de gerenciar a equipe) e gera o link de redefinição de senha dentro da janela "Editar usuário" (não para a própria conta nem para usuário inativo) |
+| Atividade da equipe | Consulta o registro de auditoria (`GET /auditoria`): quem fez o quê e quando, com filtro por tipo de item e por período, e o resumo "campo: antes → depois". Pedidos de nova senha feitos pelo cliente aparecem como "Cliente (pelo site)" e ações do terminal do servidor como "Servidor (terminal)" |
 | Saúde do sistema | Vê o banco, as tarefas automáticas e as últimas sincronizações |
+| Configurações | Regras internas do sistema (meta de reposição, dias para considerar um carrinho abandonado e limite para mostrar "Mais de N disponíveis") e as informações públicas da loja: WhatsApp (com "Testar no WhatsApp"), telefone, e-mail, horário e aviso do topo com pré-visualização (grupo Sistema do menu) |
 
 ## Tecnologias
 
@@ -136,8 +138,9 @@ A tela de entrada é única e neutra: não menciona a equipe. O mesmo campo acei
 | `/produtos?campanha=...&subcategoria=...` | Catálogo filtrado por campanha ou subcategoria (os destinos de banner e pop-up apontam para cá) | Todos |
 | `/gestor` e `/gestor/...` | Área da equipe (inclui `/gestor/carrinhos`, os carrinhos abandonados) | Equipe |
 | `/gestor/equipe` | Gestão da equipe | Equipe com a marca de gerenciar a equipe |
+| `/gestor/atividade` | Atividade da equipe (auditoria) | Equipe |
 
-As rotas protegidas redirecionam: sem login, vão para `/entrar` e voltam depois. Um cliente que abre `/gestor` volta para a página inicial.
+As rotas protegidas redirecionam: sem login, vão para `/entrar` e voltam depois (o caminho de volta só é aceito se for interno ao site; veja `src/utils/safeRedirect.ts`). Um cliente que abre `/gestor` volta para a página inicial.
 
 ## Como o front conversa com a API
 
