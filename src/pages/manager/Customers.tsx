@@ -7,6 +7,7 @@ import Field, { PasswordField } from '../../components/Field';
 import Icon from '../../components/Icon';
 import ChipFilter from '../../components/manager/ChipFilter';
 import Modal from '../../components/manager/Modal';
+import ResetLinkButton from '../../components/manager/ResetLinkButton';
 import Pagination from '../../components/manager/Pagination';
 import SearchBox from '../../components/manager/SearchBox';
 import SectionHeader from '../../components/manager/SectionHeader';
@@ -196,9 +197,18 @@ function CustomerModal({ id, onClose, onChanged }: { id: number; onClose: () => 
             <Button type="submit" variant="primary" className="mt-4 px-4 py-2 text-sm">Salvar dados</Button>
           </form>
 
+          {data.cliente.ativo && (
+            <div className="mt-4 rounded-2xl border border-black/10 p-4">
+              <h4 className="font-extrabold">Redefinição de senha por link <span className="ml-1 rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">recomendado</span></h4>
+              <p className="mb-3 text-sm text-muted">Para o cliente que esqueceu a senha. Confirme quem é pelo WhatsApp, gere o link e envie: o próprio cliente escolhe a nova senha e a equipe não fica sabendo dela.</p>
+              <ResetLinkButton rota={`/clientes/${id}/redefinicao-senha`} nome={data.cliente.nome_exibicao} telefone={data.cliente.telefone} />
+            </div>
+          )}
+
           <form onSubmit={setTempPassword} noValidate className="mt-4 rounded-2xl border border-black/10 p-4">
             <h4 className="font-extrabold">Senha temporária</h4>
             <p className="text-sm text-muted">Para o cliente que esqueceu a senha. Informe a senha por telefone/WhatsApp e oriente a troca em “Minha conta”.</p>
+            <p className="mt-1 rounded-xl bg-amber-100 p-2 text-sm text-amber-800">A equipe passa a conhecer esta senha. Prefira o link de redefinição.</p>
             <div className="flex flex-wrap items-end gap-2">
               <PasswordField visivelInicial className="min-w-48 flex-1" label="Nova senha (8 a 72 caracteres)" value={senha} onChange={(e) => setSenha(e.target.value)} error={senhaErr} autoComplete="new-password" />
               <Button type="button" variant="ghost" className="mb-0.5 px-4 py-2 text-sm" onClick={generate}>Gerar</Button>

@@ -5,6 +5,7 @@ import Button from '../../components/Button';
 import Field, { PasswordField } from '../../components/Field';
 import Icon from '../../components/Icon';
 import IconButton from '../../components/manager/IconButton';
+import ResetLinkButton from '../../components/manager/ResetLinkButton';
 import Modal from '../../components/manager/Modal';
 import SectionHeader from '../../components/manager/SectionHeader';
 import TableCard from '../../components/manager/TableCard';
@@ -56,7 +57,12 @@ export default function Team() {
                   onChange={(v) => patch(u, { pode_gerenciar_equipe: v }, v ? `${u.nome} agora gerencia a equipe.` : `${u.nome} não gerencia mais a equipe.`)} /></td>
                 <td className="px-4">{me ? <span className="text-xs text-muted">—</span> : <Toggle checked={u.ativo} label={`Ativar ${u.nome}`}
                   onChange={(v) => patch(u, { ativo: v }, v ? `${u.nome} reativado.` : `${u.nome} desativado: perdeu o acesso.`)} />}</td>
-                <td className="px-4 text-right"><IconButton icon="edit" label="Editar" onClick={() => setEditing(u)} /></td>
+                <td className="px-4 text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    {!me && u.ativo && <ResetLinkButton rota={`/admin/usuarios/${u.id_usuario}/redefinicao-senha`} nome={u.nome} telefone={u.telefone} className="px-3 py-1.5" />}
+                    <IconButton icon="edit" label="Editar" onClick={() => setEditing(u)} />
+                  </div>
+                </td>
               </tr>
             );
           })}
@@ -103,6 +109,7 @@ function MemberModal({ membro, onClose, onSaved }: { membro: MembroEquipe | null
           <Field label="Cargo" mandatory={false} placeholder="Ex.: Estoquista" value={form.cargo} onChange={set('cargo')} error={errors.cargo} />
           <Field label="Telefone" mandatory={false} value={form.telefone} onChange={set('telefone')} error={errors.telefone} />
         </div>
+        <p className="mt-3 rounded-xl bg-amber-100 p-2 text-sm text-amber-800">A equipe passa a conhecer a senha digitada aqui. Prefira o link de redefinição.</p>
         <PasswordField label={membro ? 'Nova senha (deixe vazio para manter)' : 'Senha (8 a 72 caracteres)'} mandatory={!membro}
           autoComplete="new-password" value={form.senha} onChange={set('senha')} error={errors.senha} />
         <label className="mt-4 flex items-center gap-2 text-sm"><Toggle checked={gerencia} label="Gerencia a equipe" onChange={setGerencia} /> Pode gerenciar a equipe</label>

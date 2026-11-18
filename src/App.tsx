@@ -21,6 +21,7 @@ import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import ProductDetail from './pages/ProductDetail';
 import Register from './pages/Register';
+import ResetPassword from './pages/ResetPassword';
 import { managerRoutes } from './pages/manager/routes';
 import ManagerLayout from './pages/manager/ManagerLayout';
 import { track } from './utils/events';
@@ -72,6 +73,7 @@ const router = createBrowserRouter([
       { path: '/produto/:id', element: <ProductDetail /> },
       { path: '/entrar', element: <Login /> },
       { path: '/cadastro', element: <Register /> },
+      { path: '/redefinir-senha', element: <ResetPassword /> },
       {
         // Favoritos, carrinho e checkout exigem login: sem entrar, a pessoa vai para /entrar e volta depois.
         element: <RequireRole role="cliente" />,

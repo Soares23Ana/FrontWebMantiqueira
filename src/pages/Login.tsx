@@ -79,9 +79,9 @@ export default function Login() {
             onChange={(e) => setSenha(e.target.value)} error={errors.senha} />
           <p className="my-4 text-right text-sm text-muted">
             Esqueceu a senha? {config?.whatsapp ? (
-              <a href={`https://wa.me/${config.whatsapp}?text=${encodeURIComponent('Olá! Esqueci a senha do site e preciso de uma senha temporária.')}`}
+              <a href={`https://wa.me/${config.whatsapp}?text=${encodeURIComponent('Olá! Esqueci a senha do site e preciso de um link para criar uma nova senha.')}`}
                 target="_blank" rel="noopener noreferrer" className="font-extrabold text-brand">Fale com a Mantiqueira no WhatsApp</a>
-            ) : 'Fale com a Mantiqueira pelo telefone'}: a equipe define uma senha temporária para você.
+            ) : 'Fale com a Mantiqueira pelo telefone'}: a equipe envia um link para você criar uma nova senha.
           </p>
           <Button variant="primary" type="submit" disabled={sending} className="w-full rounded-lg uppercase disabled:opacity-60">
             {sending ? 'Entrando...' : 'Entrar'}
